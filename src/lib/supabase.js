@@ -7,4 +7,10 @@ if (!supabaseUrl || !supabasePublishableKey) {
   throw new Error('Konfigurasi Supabase belum lengkap. Periksa file .env.local.');
 }
 
-export const supabase = createClient(supabaseUrl, supabasePublishableKey);
+export const supabase = createClient(supabaseUrl, supabasePublishableKey, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+  },
+});

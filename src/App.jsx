@@ -331,6 +331,15 @@ export function App() {
       void syncAuthSession(session, event);
     });
 
+    supabase.auth.getSession()
+      .then(({ data }) => {
+        if (isMounted) void syncAuthSession(data.session, 'INITIAL_SESSION');
+      })
+      .catch((error) => {
+        console.error('Gagal membaca sesi login:', error.message);
+        if (isMounted) setAuthLoading(false);
+      });
+
     return () => {
       isMounted = false;
       subscription.unsubscribe();
