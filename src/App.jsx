@@ -150,9 +150,11 @@ export function App() {
   const [cloudReady, setCloudReady] = useState(false);
   const [syncStatus, setSyncStatus] = useState('connecting');
   const [needsOnboarding, setNeedsOnboarding] = useState(false);
+  const [authError, setAuthError] = useState('');
   const suppressCloudWriteRef = useRef(false);
   const authUserIdRef = useRef(null);
   const authSyncInFlightRef = useRef(null);
+  const initialSessionRetryRef = useRef(false);
   const cloudSaveRef = useRef({ inFlight: false, pending: null, retryTimer: null });
 
   // Core App State
@@ -247,6 +249,7 @@ export function App() {
     setPinVerified(false);
     setActiveOrganizationId(null);
     setCloudReady(false);
+    setAuthError('');
     setAuthLoading(false);
   }, []);
 
@@ -261,6 +264,28 @@ export function App() {
           if (isMounted) clearAuthenticatedSession();
           return;
         }
+        if (event === 'INITIAL_SESSION' && !initialSessionRetryRef.current) {
+          initialSessionRetryRef.current = true;
+          setTimeout(async () => {
+            const { data, error } = await supabase.auth.getSession();
+            if (error) {
+              console.error('Gagal membaca ulang sesi login:', error.message);
+              if (isMounted) {
+                setAuthError(`Session login tidak terbaca: ${error.message}`);
+                setAuthLoading(false);
+              }
+              return;
+            }
+            if (data.session) {
+              void syncAuthSession(data.session, 'SESSION_RETRY');
+              return;
+            }
+            if (isMounted && !authSyncInFlightRef.current && !authUserIdRef.current) {
+              setAuthLoading(false);
+            }
+          }, 900);
+          return;
+        }
         // Ignore a stale empty event while the same account is still being
         // restored by Supabase. This prevents an unexpected jump to login.
         if (authSyncInFlightRef.current || authUserIdRef.current) return;
@@ -272,6 +297,10 @@ export function App() {
       // the already loaded workspace or ask the user to authenticate again.
       if (authUserIdRef.current === user.id || authSyncInFlightRef.current === user.id) return;
       authSyncInFlightRef.current = user.id;
+      if (isMounted) {
+        setAuthError('');
+        setAuthLoading(true);
+      }
       if (authUserIdRef.current && authUserIdRef.current !== user.id && isMounted) {
         const saveState = cloudSaveRef.current;
         clearTimeout(saveState.retryTimer);
@@ -293,7 +322,10 @@ export function App() {
       if (membershipError) {
         console.error('Gagal memuat akses organisasi:', membershipError.message);
         authSyncInFlightRef.current = null;
-        if (isMounted) setAuthLoading(false);
+        if (isMounted) {
+          setAuthError(`Gagal memuat akses organisasi: ${membershipError.message}`);
+          setAuthLoading(false);
+        }
         return;
       }
 
@@ -304,7 +336,10 @@ export function App() {
         if (organizationError) {
           console.error('Gagal membuat organisasi awal:', organizationError.message);
           authSyncInFlightRef.current = null;
-          if (isMounted) setAuthLoading(false);
+          if (isMounted) {
+            setAuthError(`Gagal membuat workspace toko: ${organizationError.message}`);
+            setAuthLoading(false);
+          }
           return;
         }
         membership = { organization_id: organizationId, role: 'owner' };
@@ -337,7 +372,10 @@ export function App() {
       })
       .catch((error) => {
         console.error('Gagal membaca sesi login:', error.message);
-        if (isMounted) setAuthLoading(false);
+        if (isMounted) {
+          setAuthError(`Gagal membaca sesi login: ${error.message}`);
+          setAuthLoading(false);
+        }
       });
 
     return () => {
@@ -725,6 +763,50 @@ export function App() {
 
   if (authLoading) {
     return <div className="login-screen"><div className="login-card"><p>Memeriksa sesi aman...</p></div></div>;
+  }
+
+  if (authError) {
+    return (
+      <div className="login-screen">
+        <div className="login-card">
+          <h2 style={{ fontSize: '18px', textAlign: 'center' }}>Login berhasil, workspace belum terbuka</h2>
+          <p style={{ color: 'var(--text-muted)', fontSize: '13px', lineHeight: 1.5, textAlign: 'center' }}>{authError}</p>
+          <button
+            type="button"
+            className="login-btn"
+            onClick={() => {
+              setAuthError('');
+              setAuthLoading(true);
+              supabase.auth.getSession()
+                .then(({ data }) => {
+                  if (data.session) {
+                    window.location.reload();
+                  } else {
+                    setAuthLoading(false);
+                  }
+                })
+                .catch((error) => {
+                  setAuthError(error.message);
+                  setAuthLoading(false);
+                });
+            }}
+          >
+            Coba buka ulang sesi
+          </button>
+          <button
+            type="button"
+            className="role-btn"
+            onClick={() => {
+              setAuthError('');
+              clearAuthenticatedSession();
+              void supabase.auth.signOut();
+            }}
+          >
+            Keluar dan login ulang
+          </button>
+        </div>
+      </div>
+    );
   }
 
   if (!currentUserRole) {
