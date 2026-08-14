@@ -1,9 +1,34 @@
 import React, { useState } from 'react';
-import { Package, Plus, Edit2, Trash2, Save, X, ShoppingBag, PlusCircle, ArrowUpRight, CheckCircle2 } from 'lucide-react';
+import {
+  Package,
+  Plus,
+  Edit2,
+  Trash2,
+  Save,
+  X,
+  ShoppingBag,
+  PlusCircle,
+  CheckCircle2
+} from 'lucide-react';
 import { formatRupiah } from '../../utils/formatters';
 import { sounds } from '../../utils/audio';
 
-export const InventoryManager = ({ inventory, setInventory }) => {
+const getDefaultPackSize = (unit) => {
+  if (unit === 'pcs') return 1;
+  if (unit === 'liter') return 1;
+  return 1000;
+};
+
+const getDefaultPackUnitName = (unit) => {
+  if (unit === 'ml') return 'Botol';
+  if (unit === 'liter') return 'Jerigen';
+  if (unit === 'g') return 'Pack';
+  if (unit === 'pcs') return 'Pcs';
+  if (unit === 'cup') return 'Cup';
+  return 'Kemasan';
+};
+
+export const InventoryManager = ({ inventory = [], setInventory }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [restockItem, setRestockItem] = useState(null);
   const [restockPacksQty, setRestockPacksQty] = useState(1);
@@ -21,10 +46,18 @@ export const InventoryManager = ({ inventory, setInventory }) => {
 
   const handleOpenEdit = (item = null) => {
     if (item) {
+      const unit = item.unit || 'ml';
+
       setFormData({
         ...item,
-        packSize: item.packSize || (item.unit === 'pcs' ? 1 : 1000),
-        packUnitName: item.packUnitName || (item.unit === 'ml' ? 'Botol' : item.unit === 'g' ? 'Pack' : 'Pcs')
+        id: item.id || '',
+        name: item.name || '',
+        stock: Number(item.stock || 0),
+        unit,
+        minStock: Number(item.minStock || 0),
+        packSize: Number(item.packSize || getDefaultPackSize(unit)),
+        packUnitName: item.packUnitName || getDefaultPackUnitName(unit),
+        costPerUnit: Number(item.costPerUnit || 0)
       });
     } else {
       setFormData({
@@ -38,7 +71,24 @@ export const InventoryManager = ({ inventory, setInventory }) => {
         costPerUnit: 0
       });
     }
+
     setIsEditing(true);
+  };
+
+  const handleUnitChange = (unit) => {
+    setFormData((prev) => ({
+      ...prev,
+      unit,
+      packSize:
+        prev.packSize === 1000 || !prev.packSize
+          ? getDefaultPackSize(unit)
+          : prev.packSize,
+      packUnitName:
+        !prev.packUnitName ||
+        ['Botol', 'Jerigen', 'Pack', 'Pcs', 'Cup', 'Kemasan'].includes(prev.packUnitName)
+          ? getDefaultPackUnitName(unit)
+          : prev.packUnitName
+    }));
   };
 
   const handleOpenRestock = (item) => {
@@ -49,60 +99,93 @@ export const InventoryManager = ({ inventory, setInventory }) => {
 
   const handleConfirmRestock = () => {
     if (!restockItem) return;
-    const packSize = restockItem.packSize || (restockItem.unit === 'pcs' ? 1 : 1000);
+
+    const packSize =
+      Number(restockItem.packSize) || getDefaultPackSize(restockItem.unit);
+
     const addedAmount = Number(restockPacksQty) * packSize;
 
-    if (addedAmount <= 0) return alert('Jumlah pembelian harus lebih dari 0!');
+    if (addedAmount <= 0) {
+      return alert('Jumlah pembelian harus lebih dari 0!');
+    }
 
     sounds.playCashRegister();
-    setInventory(prev => prev.map(item => {
-      if (item.id === restockItem.id) {
-        return {
-          ...item,
-          stock: item.stock + addedAmount
-        };
-      }
-      return item;
-    }));
+
+    setInventory((prev) =>
+      prev.map((item) => {
+        if (item.id === restockItem.id) {
+          return {
+            ...item,
+            stock: Number(item.stock || 0) + addedAmount
+          };
+        }
+
+        return item;
+      })
+    );
 
     setRestockItem(null);
   };
 
   const handleSave = () => {
-    if (!formData.name) return alert('Nama bahan baku harus diisi!');
+    if (!formData.name.trim()) {
+      return alert('Nama bahan baku harus diisi!');
+    }
 
-    setInventory(prev => {
-      const exists = prev.find(i => i.id === formData.id);
+    const normalized = {
+      ...formData,
+      name: formData.name.trim(),
+      stock: Number(formData.stock) || 0,
+      minStock: Number(formData.minStock) || 0,
+      packSize: Number(formData.packSize) || getDefaultPackSize(formData.unit),
+      costPerUnit: Number(formData.costPerUnit) || 0,
+      unit: formData.unit || 'ml',
+      packUnitName: formData.packUnitName?.trim() || getDefaultPackUnitName(formData.unit)
+    };
+
+    setInventory((prev) => {
+      const exists = prev.find((item) => item.id === normalized.id);
+
       if (exists) {
-        return prev.map(i => i.id === formData.id ? formData : i);
+        return prev.map((item) =>
+          item.id === normalized.id ? normalized : item
+        );
       }
-      return [formData, ...prev];
+
+      return [normalized, ...prev];
     });
+
     setIsEditing(false);
   };
 
   const handleDelete = (id) => {
     if (window.confirm('Yakin ingin menghapus bahan baku ini?')) {
-      setInventory(prev => prev.filter(i => i.id !== id));
+      setInventory((prev) => prev.filter((item) => item.id !== id));
     }
   };
 
   return (
-    <div style={{ padding: '24px', maxWidth: '1050px', margin: '0 auto', overflowY: 'auto', height: '100%' }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
+    <div className="inventory-page">
+      <div className="inventory-heading">
         <div>
-          <h2 style={{ fontSize: '24px', fontWeight: '700' }}>Manajemen Bahan Baku &amp; Restock Kemasan</h2>
-          <p style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
-            Hitung stok otomatis dalam volume/berat (`ml`/`g`) dan kesetaraan unit kemasan (`Botol`/`Pack`).
+          <h2>Manajemen Bahan Baku &amp; Restock Kemasan</h2>
+          <p>
+            Kelola stok dalam ml, liter, gram, pieces, atau cup dan hitung
+            kesetaraan unit kemasan.
           </p>
         </div>
-        <button onClick={() => handleOpenEdit()} className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+
+        <button
+          onClick={() => handleOpenEdit()}
+          className="btn-primary inventory-add-button"
+          style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
+        >
           <Plus size={18} /> Tambah Bahan Baku
         </button>
       </div>
 
-      <div className="apple-table-container">
-        <table className="apple-table">
+      <div className="apple-table-container inventory-table-container">
+        <table className="apple-table inventory-table">
           <thead>
             <tr>
               <th>ID</th>
@@ -111,83 +194,122 @@ export const InventoryManager = ({ inventory, setInventory }) => {
               <th>Stok Fisik Kemasan</th>
               <th>Stok Minimum</th>
               <th>HPP / Unit</th>
-              <th style={{ textAlign: 'right' }}>Aksi &amp; Restock</th>
+              <th className="inventory-action-column">Aksi &amp; Restock</th>
             </tr>
           </thead>
+
           <tbody>
-            {inventory.map(item => {
-              const packSize = item.packSize || (item.unit === 'pcs' ? 1 : 1000);
-              const packUnitName = item.packUnitName || (item.unit === 'ml' ? 'Botol' : item.unit === 'g' ? 'Pack' : 'Pcs');
-              const packCount = packSize > 0 ? (item.stock / packSize).toFixed(1) : item.stock;
-              const isLow = item.stock <= item.minStock;
+            {inventory.map((item) => {
+              const unit = item.unit || 'ml';
+              const stock = Number(item.stock || 0);
+              const packSize =
+                Number(item.packSize) || getDefaultPackSize(unit);
+              const packUnitName =
+                item.packUnitName || getDefaultPackUnitName(unit);
+              const packCount =
+                packSize > 0 ? (stock / packSize).toFixed(1) : stock;
+              const isLow = stock <= Number(item.minStock || 0);
 
               return (
                 <tr key={item.id}>
-                  <td style={{ color: 'var(--text-muted)', fontSize: '12px' }}>{item.id.substring(0, 8)}</td>
+                  <td style={{ color: 'var(--text-muted)', fontSize: '12px' }}>
+                    {String(item.id || '').substring(0, 8)}
+                  </td>
+
                   <td>
-                    <div style={{ fontWeight: '700' }}>{item.name}</div>
-                    <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-                      1 {packUnitName} = {packSize} {item.unit}
+                    <div style={{ fontWeight: '700' }}>
+                      {item.name || 'Bahan tanpa nama'}
+                    </div>
+                    <div
+                      style={{
+                        fontSize: '11px',
+                        color: 'var(--text-muted)'
+                      }}
+                    >
+                      1 {packUnitName} = {packSize} {unit}
                     </div>
                   </td>
+
                   <td>
-                    <span style={{ 
-                      color: isLow ? 'var(--apple-red)' : 'var(--apple-green)',
-                      fontWeight: '800',
-                      fontSize: '15px'
-                    }}>
-                      {item.stock.toLocaleString('id-ID')} {item.unit}
+                    <span
+                      style={{
+                        color: isLow
+                          ? 'var(--apple-red)'
+                          : 'var(--apple-green)',
+                        fontWeight: '800',
+                        fontSize: '15px'
+                      }}
+                    >
+                      {stock.toLocaleString('id-ID')} {unit}
                     </span>
                   </td>
+
                   <td>
-                    <div style={{
-                      padding: '4px 10px',
-                      borderRadius: '8px',
-                      background: 'rgba(2, 132, 199, 0.08)',
-                      color: 'var(--apple-blue)',
-                      fontWeight: '700',
-                      fontSize: '12px',
-                      display: 'inline-block'
-                    }}>
+                    <div
+                      style={{
+                        padding: '4px 10px',
+                        borderRadius: '8px',
+                        background: 'rgba(2, 132, 199, 0.08)',
+                        color: 'var(--apple-blue)',
+                        fontWeight: '700',
+                        fontSize: '12px',
+                        display: 'inline-block'
+                      }}
+                    >
                       📦 ~ {packCount} {packUnitName}
                     </div>
                   </td>
-                  <td style={{ color: 'var(--text-muted)' }}>{item.minStock} {item.unit}</td>
-                  <td>{formatRupiah(item.costPerUnit || 0)}</td>
-                  <td style={{ textAlign: 'right' }}>
-                    <button
-                      onClick={() => handleOpenRestock(item)}
-                      style={{
-                        background: 'rgba(16, 185, 129, 0.12)',
-                        color: 'var(--apple-green)',
-                        border: '1px solid rgba(16, 185, 129, 0.25)',
-                        padding: '6px 12px',
-                        borderRadius: '8px',
-                        fontWeight: '700',
-                        fontSize: '12px',
-                        cursor: 'pointer',
-                        marginRight: '10px',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '4px'
-                      }}
-                      title="Restock Pembelian Unit Kemasan Baru"
-                    >
-                      <PlusCircle size={14} /> Restock {packUnitName}
-                    </button>
-                    <button onClick={() => handleOpenEdit(item)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--apple-blue)', marginRight: '10px' }}>
-                      <Edit2 size={16} />
-                    </button>
-                    <button onClick={() => handleDelete(item.id)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--apple-red)' }}>
-                      <Trash2 size={16} />
-                    </button>
+
+                  <td style={{ color: 'var(--text-muted)' }}>
+                    {Number(item.minStock || 0).toLocaleString('id-ID')} {unit}
+                  </td>
+
+                  <td>{formatRupiah(Number(item.costPerUnit || 0))}</td>
+
+                  <td className="inventory-action-column">
+                    <div className="inventory-actions">
+                      <button
+                        onClick={() => handleOpenRestock(item)}
+                        className="inventory-restock-button"
+                        title={`Restock ${packUnitName}`}
+                      >
+                        <PlusCircle size={14} />
+                        <span>Restock {packUnitName}</span>
+                      </button>
+
+                      <button
+                        onClick={() => handleOpenEdit(item)}
+                        className="inventory-icon-button edit"
+                        title="Edit bahan baku"
+                        aria-label="Edit bahan baku"
+                      >
+                        <Edit2 size={16} />
+                      </button>
+
+                      <button
+                        onClick={() => handleDelete(item.id)}
+                        className="inventory-icon-button delete"
+                        title="Hapus bahan baku"
+                        aria-label="Hapus bahan baku"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               );
             })}
+
             {inventory.length === 0 && (
               <tr>
-                <td colSpan="7" style={{ textAlign: 'center', padding: '30px', color: 'var(--text-muted)' }}>
+                <td
+                  colSpan="7"
+                  style={{
+                    textAlign: 'center',
+                    padding: '30px',
+                    color: 'var(--text-muted)'
+                  }}
+                >
                   Belum ada bahan baku terdaftar.
                 </td>
               </tr>
@@ -196,76 +318,232 @@ export const InventoryManager = ({ inventory, setInventory }) => {
         </table>
       </div>
 
-      {/* Quick Restock Packaging Modal */}
       {restockItem && (
-        <div className="modal-overlay" onClick={() => setRestockItem(null)}>
-          <div className="modal-card" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '480px' }}>
+        <div
+          className="modal-overlay"
+          onClick={() => setRestockItem(null)}
+        >
+          <div
+            className="modal-card"
+            onClick={(event) => event.stopPropagation()}
+            style={{ maxWidth: '480px' }}
+          >
             <div className="modal-header">
-              <h3 style={{ fontSize: '16px', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <h3
+                style={{
+                  fontSize: '16px',
+                  fontWeight: '700',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}
+              >
                 <ShoppingBag size={18} color="var(--apple-green)" />
                 <span>Restock Pembelian Bahan Baku</span>
               </h3>
-              <button onClick={() => setRestockItem(null)} className="modal-close"><X size={18} /></button>
+
+              <button
+                onClick={() => setRestockItem(null)}
+                className="modal-close"
+                type="button"
+              >
+                <X size={18} />
+              </button>
             </div>
-            <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <div style={{ background: 'var(--bg-main)', padding: '14px', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-color)' }}>
-                <h4 style={{ fontSize: '15px', fontWeight: '800' }}>{restockItem.name}</h4>
-                <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>
-                  Ukuran per 1 {restockItem.packUnitName || 'Kemasan'}: <strong>{restockItem.packSize || 1000} {restockItem.unit}</strong>
+
+            <div
+              className="modal-body"
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '16px'
+              }}
+            >
+              <div
+                style={{
+                  background: 'var(--bg-main)',
+                  padding: '14px',
+                  borderRadius: 'var(--radius-lg)',
+                  border: '1px solid var(--border-color)'
+                }}
+              >
+                <h4 style={{ fontSize: '15px', fontWeight: '800' }}>
+                  {restockItem.name}
+                </h4>
+
+                <div
+                  style={{
+                    fontSize: '12px',
+                    color: 'var(--text-muted)',
+                    marginTop: '4px'
+                  }}
+                >
+                  Ukuran per 1 {restockItem.packUnitName || 'Kemasan'}:{' '}
+                  <strong>
+                    {restockItem.packSize ||
+                      getDefaultPackSize(restockItem.unit)}
+                    {' '}
+                    {restockItem.unit}
+                  </strong>
                 </div>
               </div>
 
               <div>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: '700', color: 'var(--text-main)', marginBottom: '6px' }}>
-                  JUMLAH {restockItem.packUnitName?.toUpperCase() || 'UNIT KEMASAN'} DIBELI / DITAMBAH:
+                <label
+                  style={{
+                    display: 'block',
+                    fontSize: '13px',
+                    fontWeight: '700',
+                    color: 'var(--text-main)',
+                    marginBottom: '6px'
+                  }}
+                >
+                  JUMLAH{' '}
+                  {restockItem.packUnitName?.toUpperCase() ||
+                    'UNIT KEMASAN'}{' '}
+                  DIBELI / DITAMBAH:
                 </label>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <input 
-                    type="number" 
+
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px'
+                  }}
+                >
+                  <input
+                    type="number"
                     min="1"
-                    className="apple-input" 
-                    style={{ fontSize: '18px', fontWeight: '800', textAlign: 'center' }}
+                    className="apple-input"
+                    style={{
+                      fontSize: '18px',
+                      fontWeight: '800',
+                      textAlign: 'center'
+                    }}
                     value={restockPacksQty}
-                    onChange={(e) => setRestockPacksQty(Math.max(1, parseInt(e.target.value) || 1))}
+                    onChange={(event) =>
+                      setRestockPacksQty(
+                        Math.max(1, parseInt(event.target.value) || 1)
+                      )
+                    }
                   />
-                  <span style={{ fontSize: '14px', fontWeight: '700', color: 'var(--apple-blue)', minWidth: '80px' }}>
+
+                  <span
+                    style={{
+                      fontSize: '14px',
+                      fontWeight: '700',
+                      color: 'var(--apple-blue)',
+                      minWidth: '80px'
+                    }}
+                  >
                     {restockItem.packUnitName || 'Kemasan'}
                   </span>
                 </div>
               </div>
 
-              {/* Automatic Conversion Calculation Box */}
               {(() => {
-                const packSize = restockItem.packSize || 1000;
-                const packUnitName = restockItem.packUnitName || 'Botol';
-                const addedVolume = Number(restockPacksQty || 0) * packSize;
-                const newTotalVolume = restockItem.stock + addedVolume;
-                const newPacksCount = (newTotalVolume / packSize).toFixed(1);
+                const packSize =
+                  Number(restockItem.packSize) ||
+                  getDefaultPackSize(restockItem.unit);
+                const packUnitName =
+                  restockItem.packUnitName ||
+                  getDefaultPackUnitName(restockItem.unit);
+                const addedVolume =
+                  Number(restockPacksQty || 0) * packSize;
+                const newTotalVolume =
+                  Number(restockItem.stock || 0) + addedVolume;
+                const newPacksCount =
+                  packSize > 0
+                    ? (newTotalVolume / packSize).toFixed(1)
+                    : newTotalVolume;
 
                 return (
-                  <div style={{ background: 'rgba(16, 185, 129, 0.08)', padding: '14px', borderRadius: 'var(--radius-lg)', border: '1px solid rgba(16, 185, 129, 0.2)', fontSize: '13px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                  <div
+                    style={{
+                      background: 'rgba(16, 185, 129, 0.08)',
+                      padding: '14px',
+                      borderRadius: 'var(--radius-lg)',
+                      border: '1px solid rgba(16, 185, 129, 0.2)',
+                      fontSize: '13px'
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        marginBottom: '6px'
+                      }}
+                    >
                       <span>Pertambahan Volume:</span>
-                      <strong style={{ color: 'var(--apple-green)' }}>+ {addedVolume.toLocaleString('id-ID')} {restockItem.unit}</strong>
+                      <strong style={{ color: 'var(--apple-green)' }}>
+                        + {addedVolume.toLocaleString('id-ID')}{' '}
+                        {restockItem.unit}
+                      </strong>
                     </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', color: 'var(--text-muted)' }}>
+
+                    <div
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        marginBottom: '6px',
+                        color: 'var(--text-muted)'
+                      }}
+                    >
                       <span>Stok Sebelum Restock:</span>
-                      <span>{restockItem.stock.toLocaleString('id-ID')} {restockItem.unit}</span>
+                      <span>
+                        {Number(restockItem.stock || 0).toLocaleString('id-ID')}{' '}
+                        {restockItem.unit}
+                      </span>
                     </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: '8px', borderTop: '1px dashed var(--border-color)', fontWeight: '800', color: 'var(--apple-blue)' }}>
+
+                    <div
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        paddingTop: '8px',
+                        borderTop: '1px dashed var(--border-color)',
+                        fontWeight: '800',
+                        color: 'var(--apple-blue)'
+                      }}
+                    >
                       <span>STOK BARU SETELAH RESTOCK:</span>
-                      <span>{newTotalVolume.toLocaleString('id-ID')} {restockItem.unit} (~ {newPacksCount} {packUnitName})</span>
+                      <span>
+                        {newTotalVolume.toLocaleString('id-ID')}{' '}
+                        {restockItem.unit} (~ {newPacksCount} {packUnitName})
+                      </span>
                     </div>
                   </div>
                 );
               })()}
-
             </div>
+
             <div className="modal-footer">
-              <button onClick={() => setRestockItem(null)} style={{ padding: '10px 16px', border: '1px solid var(--border-color)', background: 'transparent', color: 'var(--text-main)', borderRadius: '8px', cursor: 'pointer', fontWeight: '500' }}>
+              <button
+                onClick={() => setRestockItem(null)}
+                style={{
+                  padding: '10px 16px',
+                  border: '1px solid var(--border-color)',
+                  background: 'transparent',
+                  color: 'var(--text-main)',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontWeight: '500'
+                }}
+                type="button"
+              >
                 Batal
               </button>
-              <button onClick={handleConfirmRestock} className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--apple-green)' }}>
+
+              <button
+                onClick={handleConfirmRestock}
+                className="btn-primary"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  background: 'var(--apple-green)'
+                }}
+              >
                 <CheckCircle2 size={18} /> Konfirmasi Restock
               </button>
             </div>
@@ -273,44 +551,118 @@ export const InventoryManager = ({ inventory, setInventory }) => {
         </div>
       )}
 
-      {/* Editor Modal */}
       {isEditing && (
         <div className="modal-overlay">
-          <div className="modal-card" style={{ maxWidth: '520px' }}>
+          <div
+            className="modal-card"
+            style={{ maxWidth: '520px' }}
+            onClick={(event) => event.stopPropagation()}
+          >
             <div className="modal-header">
-              <h3>{formData.id.startsWith('inv-') && !inventory.find(i=>i.id === formData.id) ? 'Tambah Bahan Baku Baru' : 'Edit Bahan Baku'}</h3>
-              <button onClick={() => setIsEditing(false)} className="modal-close"><X size={18} /></button>
+              <h3>
+                {formData.id.startsWith('inv-') &&
+                !inventory.find((item) => item.id === formData.id)
+                  ? 'Tambah Bahan Baku Baru'
+                  : 'Edit Bahan Baku'}
+              </h3>
+
+              <button
+                onClick={() => setIsEditing(false)}
+                className="modal-close"
+                type="button"
+              >
+                <X size={18} />
+              </button>
             </div>
-            <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+
+            <div
+              className="modal-body"
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '16px'
+              }}
+            >
               <div>
-                <label style={{ display: 'block', fontSize: '13px', color: 'var(--text-muted)', marginBottom: '6px' }}>Nama Bahan Baku</label>
-                <input 
-                  type="text" 
-                  className="apple-input" 
+                <label
+                  style={{
+                    display: 'block',
+                    fontSize: '13px',
+                    color: 'var(--text-muted)',
+                    marginBottom: '6px'
+                  }}
+                >
+                  Nama Bahan Baku
+                </label>
+
+                <input
+                  type="text"
+                  className="apple-input"
                   value={formData.name}
-                  onChange={(e) => setFormData({...formData, name: e.target.value})}
+                  onChange={(event) =>
+                    setFormData({
+                      ...formData,
+                      name: event.target.value
+                    })
+                  }
                   placeholder="Misal: Fresh Milk Pasteurisasi / Susu Diamond"
                 />
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: '1fr 1fr',
+                  gap: '16px'
+                }}
+                className="inventory-editor-grid"
+              >
                 <div>
-                  <label style={{ display: 'block', fontSize: '13px', color: 'var(--text-muted)', marginBottom: '6px' }}>Total Stok Saat Ini</label>
-                  <input 
-                    type="number" 
-                    className="apple-input" 
+                  <label
+                    style={{
+                      display: 'block',
+                      fontSize: '13px',
+                      color: 'var(--text-muted)',
+                      marginBottom: '6px'
+                    }}
+                  >
+                    Total Stok Saat Ini
+                  </label>
+
+                  <input
+                    type="number"
+                    className="apple-input"
                     value={formData.stock}
-                    onChange={(e) => setFormData({...formData, stock: parseFloat(e.target.value) || 0})}
+                    onChange={(event) =>
+                      setFormData({
+                        ...formData,
+                        stock: parseFloat(event.target.value) || 0
+                      })
+                    }
                   />
                 </div>
+
                 <div>
-                  <label style={{ display: 'block', fontSize: '13px', color: 'var(--text-muted)', marginBottom: '6px' }}>Satuan Dasar (Unit)</label>
-                  <select 
+                  <label
+                    style={{
+                      display: 'block',
+                      fontSize: '13px',
+                      color: 'var(--text-muted)',
+                      marginBottom: '6px'
+                    }}
+                  >
+                    Satuan Dasar (Unit)
+                  </label>
+
+                  <select
                     className="apple-input"
                     value={formData.unit}
-                    onChange={(e) => setFormData({...formData, unit: e.target.value})}
+                    onChange={(event) =>
+                      handleUnitChange(event.target.value)
+                    }
                   >
                     <option value="ml">Mililiter (ml)</option>
+                    <option value="liter">Liter (L)</option>
                     <option value="g">Gram (g)</option>
                     <option value="pcs">Pieces (pcs)</option>
                     <option value="cup">Cup</option>
@@ -318,55 +670,160 @@ export const InventoryManager = ({ inventory, setInventory }) => {
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: '1fr 1fr',
+                  gap: '16px'
+                }}
+                className="inventory-editor-grid"
+              >
                 <div>
-                  <label style={{ display: 'block', fontSize: '13px', color: 'var(--text-muted)', marginBottom: '6px' }}>Jumlah Volume Per Kemasan</label>
-                  <input 
-                    type="number" 
-                    className="apple-input" 
+                  <label
+                    style={{
+                      display: 'block',
+                      fontSize: '13px',
+                      color: 'var(--text-muted)',
+                      marginBottom: '6px'
+                    }}
+                  >
+                    Jumlah Volume Per Kemasan
+                  </label>
+
+                  <input
+                    type="number"
+                    className="apple-input"
                     value={formData.packSize}
-                    onChange={(e) => setFormData({...formData, packSize: parseFloat(e.target.value) || 1})}
-                    placeholder="Misal: 1000 untuk 1000ml"
+                    onChange={(event) =>
+                      setFormData({
+                        ...formData,
+                        packSize:
+                          parseFloat(event.target.value) || 1
+                      })
+                    }
+                    placeholder={
+                      formData.unit === 'liter'
+                        ? 'Misal: 1 untuk 1 L'
+                        : 'Misal: 1000 untuk 1000 ml'
+                    }
                   />
                 </div>
+
                 <div>
-                  <label style={{ display: 'block', fontSize: '13px', color: 'var(--text-muted)', marginBottom: '6px' }}>Nama Unit Kemasan Fisik</label>
-                  <input 
-                    type="text" 
-                    className="apple-input" 
+                  <label
+                    style={{
+                      display: 'block',
+                      fontSize: '13px',
+                      color: 'var(--text-muted)',
+                      marginBottom: '6px'
+                    }}
+                  >
+                    Nama Unit Kemasan Fisik
+                  </label>
+
+                  <input
+                    type="text"
+                    className="apple-input"
                     value={formData.packUnitName}
-                    onChange={(e) => setFormData({...formData, packUnitName: e.target.value})}
-                    placeholder="Misal: Botol / Pack / Karton"
+                    onChange={(event) =>
+                      setFormData({
+                        ...formData,
+                        packUnitName: event.target.value
+                      })
+                    }
+                    placeholder="Misal: Botol / Jerigen / Pack / Karton"
                   />
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: '1fr 1fr',
+                  gap: '16px'
+                }}
+                className="inventory-editor-grid"
+              >
                 <div>
-                  <label style={{ display: 'block', fontSize: '13px', color: 'var(--text-muted)', marginBottom: '6px' }}>Peringatan Stok Minimum</label>
-                  <input 
-                    type="number" 
-                    className="apple-input" 
+                  <label
+                    style={{
+                      display: 'block',
+                      fontSize: '13px',
+                      color: 'var(--text-muted)',
+                      marginBottom: '6px'
+                    }}
+                  >
+                    Peringatan Stok Minimum
+                  </label>
+
+                  <input
+                    type="number"
+                    className="apple-input"
                     value={formData.minStock}
-                    onChange={(e) => setFormData({...formData, minStock: parseFloat(e.target.value) || 0})}
+                    onChange={(event) =>
+                      setFormData({
+                        ...formData,
+                        minStock:
+                          parseFloat(event.target.value) || 0
+                      })
+                    }
                   />
                 </div>
+
                 <div>
-                  <label style={{ display: 'block', fontSize: '13px', color: 'var(--text-muted)', marginBottom: '6px' }}>Harga Modal (HPP) / Unit Dasar</label>
-                  <input 
-                    type="number" 
-                    className="apple-input" 
+                  <label
+                    style={{
+                      display: 'block',
+                      fontSize: '13px',
+                      color: 'var(--text-muted)',
+                      marginBottom: '6px'
+                    }}
+                  >
+                    Harga Modal (HPP) / Unit Dasar
+                  </label>
+
+                  <input
+                    type="number"
+                    className="apple-input"
                     value={formData.costPerUnit}
-                    onChange={(e) => setFormData({...formData, costPerUnit: parseFloat(e.target.value) || 0})}
+                    onChange={(event) =>
+                      setFormData({
+                        ...formData,
+                        costPerUnit:
+                          parseFloat(event.target.value) || 0
+                      })
+                    }
                   />
                 </div>
               </div>
             </div>
+
             <div className="modal-footer">
-              <button onClick={() => setIsEditing(false)} style={{ padding: '10px 16px', border: '1px solid var(--border-color)', background: 'transparent', color: 'var(--text-main)', borderRadius: '8px', cursor: 'pointer', fontWeight: '500' }}>
+              <button
+                onClick={() => setIsEditing(false)}
+                style={{
+                  padding: '10px 16px',
+                  border: '1px solid var(--border-color)',
+                  background: 'transparent',
+                  color: 'var(--text-main)',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontWeight: '500'
+                }}
+                type="button"
+              >
                 Batal
               </button>
-              <button onClick={handleSave} className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+
+              <button
+                onClick={handleSave}
+                className="btn-primary"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}
+              >
                 <Save size={18} /> Simpan Bahan Baku
               </button>
             </div>
@@ -376,4 +833,3 @@ export const InventoryManager = ({ inventory, setInventory }) => {
     </div>
   );
 };
-
