@@ -1913,3 +1913,475 @@ body { background: var(--ui-page-gradient) !important; background-image: var(--u
   }
 }
 
+/* ---------- Brand logo ---------- */
+.selasar-brand-logo {
+  width: auto;
+  min-width: 0;
+  height: 46px;
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+  overflow: hidden;
+  user-select: none;
+}
+
+.selasar-brand-logo img {
+  display: block;
+  width: 142px;
+  height: 52px;
+  object-fit: contain;
+  object-position: center;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.selasar-brand-logo-sm img { width: 118px; height: 44px; }
+.selasar-brand-logo-md img { width: 142px; height: 52px; }
+.selasar-brand-logo-lg img { width: 176px; height: 60px; }
+.selasar-brand-logo-xl img { width: 214px; height: 70px; }
+
+@media (max-width: 680px) {
+  .selasar-brand-logo {
+    max-width: 132px;
+    height: 42px;
+  }
+
+  .selasar-brand-logo img,
+  .selasar-brand-logo-md img {
+    width: 128px;
+    height: 44px;
+  }
+}
+
+@media (max-width: 480px) {
+  .selasar-brand-logo {
+    max-width: 116px;
+  }
+
+  .selasar-brand-logo img,
+  .selasar-brand-logo-sm img,
+  .selasar-brand-logo-md img {
+    width: 112px;
+    height: 40px;
+  }
+}
+
+/* ---------- AI assistant ---------- */
+.ai-assistant-widget,
+.ai-assistant-minimized {
+  --ai-bg: var(--ui-surface-solid, var(--bg-card, #fff));
+  --ai-bg-muted: var(--ui-surface-muted, var(--bg-card-hover, #f4f4f5));
+  --ai-line: var(--ui-line, var(--border-color, #d8d8de));
+  --ai-text: var(--text-main, #1d1d1f);
+  --ai-muted: var(--text-muted, #6e6e73);
+  --ai-accent: var(--apple-blue, #0071e3);
+  --ai-accent-2: var(--selasar-blue, #0046ad);
+}
+
+.ai-assistant-widget {
+  position: fixed;
+  right: 16px;
+  bottom: 18px;
+  z-index: 230;
+  width: min(410px, calc(100vw - 32px));
+  max-height: min(680px, calc(100dvh - 36px));
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  color: var(--ai-text);
+  background: var(--ai-bg);
+  border: 1px solid var(--ai-line);
+  border-radius: 20px;
+  box-shadow: var(--ui-shadow, 0 18px 48px rgba(0,0,0,.18));
+  backdrop-filter: blur(24px) saturate(140%);
+  -webkit-backdrop-filter: blur(24px) saturate(140%);
+}
+
+.ai-assistant-header {
+  min-height: 62px;
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex: 0 0 auto;
+  color: #fff;
+  background:
+    linear-gradient(135deg,
+      color-mix(in srgb, var(--ai-accent) 92%, transparent),
+      color-mix(in srgb, var(--ai-accent-2) 92%, transparent));
+}
+
+.ai-assistant-brand {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ai-assistant-mark,
+.ai-message-avatar,
+.ai-assistant-empty-mark {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+}
+
+.ai-assistant-mark {
+  width: 36px;
+  height: 36px;
+  border-radius: 11px;
+  background: rgba(255,255,255,.16);
+  border: 1px solid rgba(255,255,255,.16);
+  box-shadow: inset 0 1px rgba(255,255,255,.18);
+  font-size: 17px;
+}
+
+.ai-assistant-heading {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+}
+
+.ai-assistant-heading strong {
+  font-size: 13px;
+  font-weight: 850;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ai-assistant-heading span {
+  margin-top: 4px;
+  font-size: 10px;
+  opacity: .82;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ai-assistant-minimize,
+.ai-assistant-send {
+  border: 0;
+  cursor: pointer;
+}
+
+.ai-assistant-minimize {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  border-radius: 10px;
+  background: rgba(255,255,255,.14);
+  color: #fff;
+  font-size: 20px;
+  line-height: 1;
+}
+
+.ai-assistant-minimize:hover {
+  background: rgba(255,255,255,.22);
+}
+
+.ai-assistant-history {
+  flex: 1 1 auto;
+  min-height: 180px;
+  max-height: 500px;
+  padding: 14px 13px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+  background: var(--ai-bg);
+  -webkit-overflow-scrolling: touch;
+}
+
+.ai-assistant-empty {
+  margin: auto 8px;
+  padding: 18px 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 6px;
+  color: var(--ai-muted);
+  line-height: 1.55;
+}
+
+.ai-assistant-empty-mark {
+  width: 42px;
+  height: 42px;
+  margin-bottom: 4px;
+  border-radius: 14px;
+  color: var(--ai-accent);
+  background: var(--ui-accent-soft, rgba(0,113,227,.08));
+  border: 1px solid var(--ai-line);
+  font-size: 18px;
+}
+
+.ai-assistant-empty strong {
+  color: var(--ai-text);
+  font-size: 12px;
+}
+
+.ai-assistant-empty span {
+  max-width: 280px;
+  font-size: 11px;
+}
+
+.ai-message-row {
+  width: 100%;
+  display: flex;
+  gap: 7px;
+  align-items: flex-end;
+}
+
+.ai-message-row.user {
+  justify-content: flex-end;
+}
+
+.ai-message-row.assistant {
+  justify-content: flex-start;
+}
+
+.ai-message-avatar {
+  width: 26px;
+  height: 26px;
+  border-radius: 9px;
+  color: var(--ai-accent);
+  background: var(--ui-accent-soft, rgba(0,113,227,.08));
+  border: 1px solid var(--ai-line);
+  font-size: 12px;
+}
+
+.ai-message-bubble {
+  max-width: min(82%, 330px);
+  padding: 9px 11px;
+  border-radius: 15px;
+  font-size: 12px;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.ai-message-bubble.user {
+  color: #fff;
+  background: linear-gradient(135deg, var(--ai-accent), var(--ai-accent-2));
+  border-radius: 15px 15px 4px 15px;
+}
+
+.ai-message-bubble.assistant {
+  color: var(--ai-text);
+  background: var(--ai-bg-muted);
+  border: 1px solid var(--ai-line);
+  border-radius: 15px 15px 15px 4px;
+}
+
+.ai-message-loading {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 76px;
+}
+
+.ai-message-loading span {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--ai-muted);
+  animation: aiTyping 1s infinite ease-in-out;
+}
+
+.ai-message-loading span:nth-child(2) { animation-delay: .12s; }
+.ai-message-loading span:nth-child(3) { animation-delay: .24s; }
+
+.ai-message-loading em {
+  margin-left: 3px;
+  color: var(--ai-muted);
+  font-size: 10px;
+  font-style: normal;
+}
+
+@keyframes aiTyping {
+  0%, 70%, 100% { transform: translateY(0); opacity: .45; }
+  35% { transform: translateY(-3px); opacity: 1; }
+}
+
+.ai-assistant-composer {
+  flex: 0 0 auto;
+  padding: 10px 12px 11px;
+  border-top: 1px solid var(--ai-line);
+  background: var(--ai-bg);
+}
+
+.ai-assistant-input-wrap {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+}
+
+.ai-assistant-input-wrap textarea {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 42px;
+  max-height: 120px;
+  padding: 10px 11px;
+  resize: none;
+  border: 1px solid var(--ai-line);
+  border-radius: 12px;
+  outline: none;
+  background: var(--ai-bg-muted) !important;
+  color: var(--ai-text) !important;
+  font: inherit;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.ai-assistant-input-wrap textarea::placeholder {
+  color: var(--ai-muted);
+}
+
+.ai-assistant-input-wrap textarea:focus {
+  border-color: color-mix(in srgb, var(--ai-accent) 55%, var(--ai-line));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ai-accent) 12%, transparent);
+}
+
+.ai-assistant-send {
+  width: 42px;
+  height: 42px;
+  flex: 0 0 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  color: #fff;
+  background: linear-gradient(135deg, var(--ai-accent), var(--ai-accent-2));
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.ai-assistant-send:disabled {
+  opacity: .38;
+  cursor: not-allowed;
+}
+
+.ai-assistant-hint {
+  margin-top: 6px;
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--ai-muted);
+  font-size: 9px;
+}
+
+.ai-assistant-hint span:last-child {
+  text-align: right;
+}
+
+/* Minimized AI button */
+.ai-assistant-minimized {
+  position: fixed;
+  right: 16px;
+  bottom: 18px;
+  z-index: 230;
+  width: 54px;
+  height: 54px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--ui-line, var(--border-color));
+  border-radius: 17px;
+  color: #fff;
+  background: linear-gradient(135deg, var(--apple-blue), var(--selasar-blue));
+  box-shadow: var(--ui-shadow, 0 14px 34px rgba(0,0,0,.2));
+  cursor: pointer;
+}
+
+.ai-assistant-minimized-icon {
+  font-size: 21px;
+}
+
+.ai-assistant-minimized-dot {
+  position: absolute;
+  right: 7px;
+  top: 7px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--apple-green);
+  box-shadow: 0 0 0 3px rgba(255,255,255,.16);
+}
+
+/* On mobile, the chat must never sit above the navigation, cart sheet,
+   modal, or open "Lainnya" menu. */
+@media (max-width: 768px) {
+  .ai-assistant-widget {
+    right: 10px;
+    left: 10px;
+    bottom: calc(74px + env(safe-area-inset-bottom));
+    width: auto;
+    max-width: none;
+    max-height: min(72dvh, calc(100dvh - 92px));
+    border-radius: 18px;
+    z-index: 230;
+  }
+
+  .ai-assistant-history {
+    max-height: min(44dvh, 420px);
+    min-height: 150px;
+  }
+
+  .ai-assistant-hint span:last-child {
+    display: none;
+  }
+
+  .ai-assistant-minimized {
+    right: 12px;
+    bottom: calc(76px + env(safe-area-inset-bottom));
+    z-index: 230;
+  }
+
+  /* These layers deliberately sit above AI. */
+  body:has(.nav-tabs.is-open) .ai-assistant-widget,
+  body:has(.nav-tabs.is-open) .ai-assistant-minimized,
+  body.mobile-cart-open .ai-assistant-widget,
+  body.mobile-cart-open .ai-assistant-minimized,
+  body:has(.modal-overlay) .ai-assistant-widget,
+  body:has(.modal-overlay) .ai-assistant-minimized {
+    display: none !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .ai-assistant-widget {
+    left: 8px;
+    right: 8px;
+    bottom: calc(70px + env(safe-area-inset-bottom));
+    max-height: calc(100dvh - 84px);
+    border-radius: 16px;
+  }
+
+  .ai-assistant-heading span {
+    max-width: 210px;
+  }
+
+  .ai-assistant-history {
+    padding: 12px 10px;
+    max-height: calc(100dvh - 230px);
+  }
+
+  .ai-message-bubble {
+    max-width: 88%;
+  }
+
+  .ai-assistant-hint {
+    font-size: 8.5px;
+  }
+}
+
+/* Ensure the new image logo does not inherit old icon sizing rules. */
+.selasar-header .header-printer-status {
+  min-width: 0;
+  overflow: hidden;
+}
+

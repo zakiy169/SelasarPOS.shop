@@ -121,6 +121,375 @@ const isEmptyOrganizationSnapshot = (snapshot = {}) => {
 
 const isDefaultSetupProfile = (appSettings = {}) => {
   const profile = appSettings.profile || {};
+  // Self-contained AI widget styling so App.jsx can be replaced by itself.
+  useEffect(() => {
+    const styleId = 'selasar-ai-widget-style';
+    let style = document.getElementById(styleId);
+
+    if (!style) {
+      style = document.createElement('style');
+      style.id = styleId;
+      style.textContent = `
+        .ai-assistant-widget {
+          position: fixed;
+          right: 14px;
+          bottom: calc(82px + env(safe-area-inset-bottom));
+          width: min(410px, calc(100vw - 28px));
+          max-height: min(650px, calc(100dvh - 112px));
+          display: flex;
+          flex-direction: column;
+          overflow: hidden;
+          z-index: 350;
+          border: 1px solid var(--ui-line, rgba(148,163,184,.28));
+          border-radius: 20px;
+          background: var(--ui-surface, #ffffff);
+          color: var(--text-main, #111827);
+          box-shadow: 0 18px 50px rgba(15,23,42,.16);
+          backdrop-filter: blur(18px);
+          -webkit-backdrop-filter: blur(18px);
+        }
+
+        .ai-assistant-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 10px;
+          padding: 12px 14px;
+          border-bottom: 1px solid var(--ui-line, rgba(148,163,184,.22));
+          background:
+            linear-gradient(
+              135deg,
+              color-mix(in srgb, var(--apple-blue, #2563eb) 12%, var(--ui-surface, #fff)),
+              var(--ui-surface, #fff)
+            );
+        }
+
+        .ai-assistant-brand {
+          min-width: 0;
+          display: flex;
+          align-items: center;
+          gap: 10px;
+        }
+
+        .ai-assistant-mark {
+          width: 36px;
+          height: 36px;
+          flex: 0 0 36px;
+          display: grid;
+          place-items: center;
+          border-radius: 11px;
+          background: var(--apple-blue, #2563eb);
+          color: #fff;
+          box-shadow: 0 8px 18px color-mix(in srgb, var(--apple-blue, #2563eb) 26%, transparent);
+          font-size: 18px;
+        }
+
+        .ai-assistant-heading {
+          min-width: 0;
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+        }
+
+        .ai-assistant-heading strong {
+          font-size: 13px;
+          font-weight: 800;
+          color: var(--text-main, #111827);
+        }
+
+        .ai-assistant-heading span {
+          font-size: 10px;
+          color: var(--text-muted, #6b7280);
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .ai-assistant-minimize,
+        .ai-assistant-minimized {
+          border: 1px solid var(--ui-line, rgba(148,163,184,.24));
+          background: var(--ui-surface, #fff);
+          color: var(--text-main, #111827);
+          cursor: pointer;
+          box-shadow: 0 8px 20px rgba(15,23,42,.10);
+        }
+
+        .ai-assistant-minimize {
+          width: 34px;
+          height: 34px;
+          flex: 0 0 34px;
+          border-radius: 10px;
+          display: grid;
+          place-items: center;
+          font-size: 17px;
+          line-height: 1;
+        }
+
+        .ai-assistant-history {
+          flex: 1;
+          min-height: 250px;
+          height: min(470px, 48dvh);
+          overflow-y: auto;
+          padding: 14px;
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+          background: var(--ui-surface, #fff);
+          -webkit-overflow-scrolling: touch;
+          overscroll-behavior: contain;
+        }
+
+        .ai-assistant-empty {
+          margin: auto 0;
+          min-height: 160px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          text-align: center;
+          gap: 7px;
+          padding: 20px;
+          color: var(--text-muted, #6b7280);
+        }
+
+        .ai-assistant-empty-mark {
+          width: 42px;
+          height: 42px;
+          display: grid;
+          place-items: center;
+          border-radius: 13px;
+          background: color-mix(in srgb, var(--apple-blue, #2563eb) 10%, var(--ui-surface, #fff));
+          color: var(--apple-blue, #2563eb);
+          font-size: 20px;
+          margin-bottom: 4px;
+        }
+
+        .ai-assistant-empty strong {
+          color: var(--text-main, #111827);
+          font-size: 13px;
+        }
+
+        .ai-assistant-empty span {
+          max-width: 280px;
+          font-size: 11px;
+          line-height: 1.55;
+        }
+
+        .ai-message-row {
+          display: flex;
+          align-items: flex-end;
+          gap: 7px;
+          width: 100%;
+        }
+
+        .ai-message-row.user {
+          justify-content: flex-end;
+        }
+
+        .ai-message-row.assistant {
+          justify-content: flex-start;
+        }
+
+        .ai-message-avatar {
+          width: 26px;
+          height: 26px;
+          flex: 0 0 26px;
+          display: grid;
+          place-items: center;
+          border-radius: 9px;
+          background: color-mix(in srgb, var(--apple-blue, #2563eb) 11%, var(--ui-surface, #fff));
+          color: var(--apple-blue, #2563eb);
+          font-size: 13px;
+        }
+
+        .ai-message-bubble {
+          max-width: 84%;
+          padding: 9px 11px;
+          border-radius: 14px;
+          font-size: 12px;
+          line-height: 1.55;
+          white-space: pre-wrap;
+          overflow-wrap: anywhere;
+        }
+
+        .ai-message-bubble.user {
+          background: var(--apple-blue, #2563eb);
+          color: #fff;
+          border-bottom-right-radius: 5px;
+        }
+
+        .ai-message-bubble.assistant {
+          background: color-mix(in srgb, var(--ui-surface-muted, #f5f7fb) 92%, transparent);
+          color: var(--text-main, #111827);
+          border: 1px solid var(--ui-line, rgba(148,163,184,.18));
+          border-bottom-left-radius: 5px;
+        }
+
+        .ai-message-loading {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+        }
+
+        .ai-message-loading span {
+          width: 5px;
+          height: 5px;
+          border-radius: 50%;
+          background: var(--apple-blue, #2563eb);
+          animation: selasarAiDot 1.1s infinite ease-in-out;
+        }
+
+        .ai-message-loading span:nth-child(2) { animation-delay: .12s; }
+        .ai-message-loading span:nth-child(3) { animation-delay: .24s; }
+
+        .ai-message-loading em {
+          margin-left: 4px;
+          font-style: normal;
+          color: var(--text-muted, #6b7280);
+        }
+
+        .ai-assistant-composer {
+          flex: 0 0 auto;
+          padding: 10px 12px calc(12px + env(safe-area-inset-bottom));
+          border-top: 1px solid var(--ui-line, rgba(148,163,184,.22));
+          background: var(--ui-surface, #fff);
+        }
+
+        .ai-assistant-input-wrap {
+          display: flex;
+          align-items: flex-end;
+          gap: 8px;
+          padding: 6px;
+          border: 1px solid var(--ui-line, rgba(148,163,184,.25));
+          border-radius: 15px;
+          background: var(--ui-surface-muted, #f8fafc);
+        }
+
+        .ai-assistant-input-wrap textarea {
+          min-width: 0;
+          flex: 1;
+          min-height: 42px;
+          max-height: 100px;
+          resize: none;
+          border: 0;
+          outline: 0;
+          background: transparent;
+          color: var(--text-main, #111827);
+          padding: 7px 8px;
+          font: inherit;
+          font-size: 12px;
+          line-height: 1.45;
+        }
+
+        .ai-assistant-input-wrap textarea::placeholder {
+          color: var(--text-muted, #9ca3af);
+        }
+
+        .ai-assistant-send {
+          width: 42px;
+          height: 42px;
+          flex: 0 0 42px;
+          border: 0;
+          border-radius: 12px;
+          display: grid;
+          place-items: center;
+          background: var(--apple-blue, #2563eb);
+          color: #fff;
+          font-size: 16px;
+          cursor: pointer;
+          box-shadow: 0 7px 16px color-mix(in srgb, var(--apple-blue, #2563eb) 24%, transparent);
+        }
+
+        .ai-assistant-send:disabled {
+          opacity: .45;
+          cursor: not-allowed;
+          box-shadow: none;
+        }
+
+        .ai-assistant-hint {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 8px;
+          margin-top: 7px;
+          padding: 0 3px;
+          font-size: 9px;
+          color: var(--text-muted, #6b7280);
+        }
+
+        .ai-assistant-minimized {
+          position: fixed;
+          right: 14px;
+          bottom: calc(82px + env(safe-area-inset-bottom));
+          width: 52px;
+          height: 52px;
+          z-index: 350;
+          padding: 0;
+          border-radius: 50%;
+          display: grid;
+          place-items: center;
+          background: var(--ui-surface, #fff);
+        }
+
+        .ai-assistant-minimized-icon {
+          color: var(--apple-blue, #2563eb);
+          font-size: 22px;
+          line-height: 1;
+        }
+
+        .ai-assistant-minimized-dot {
+          position: absolute;
+          right: 6px;
+          top: 6px;
+          width: 8px;
+          height: 8px;
+          border-radius: 50%;
+          background: #22c55e;
+          border: 2px solid var(--ui-surface, #fff);
+        }
+
+        @keyframes selasarAiDot {
+          0%, 100% { transform: translateY(0); opacity: .45; }
+          50% { transform: translateY(-3px); opacity: 1; }
+        }
+
+        @media (max-width: 768px) {
+          .ai-assistant-widget {
+            right: 12px;
+            left: 12px;
+            bottom: calc(84px + env(safe-area-inset-bottom));
+            width: auto;
+            max-height: calc(100dvh - 108px - env(safe-area-inset-bottom));
+            border-radius: 18px;
+          }
+
+          .ai-assistant-heading span {
+            max-width: 170px;
+          }
+
+          .ai-assistant-history {
+            height: min(48dvh, 390px);
+            min-height: 200px;
+          }
+
+          .ai-assistant-hint span:last-child {
+            display: none;
+          }
+
+          .ai-assistant-minimized {
+            right: 12px;
+            bottom: calc(84px + env(safe-area-inset-bottom));
+          }
+        }
+      `;
+      document.head.appendChild(style);
+    }
+
+    return () => {
+      style?.remove();
+    };
+  }, []);
+
   return (
     (profile.businessName || 'Kedai Kopi Selasar') === 'Kedai Kopi Selasar' &&
     (profile.ownerName || 'Owner') === 'Owner' &&
@@ -642,24 +1011,61 @@ export function App() {
   }, [appSettings.font]);
 
   // ── Mobile UI safeguards ────────────────────────────────────────────────
-  // Menambahkan ruang aman di atas bottom navigation dan mengangkat dialog
-  // dari bagian paling bawah layar pada perangkat kecil.
   useEffect(() => {
     const styleId = 'selasar-mobile-ui-fix';
     let style = document.getElementById(styleId);
+
     if (!style) {
       style = document.createElement('style');
       style.id = styleId;
       style.textContent = `
-        :root { --selasar-mobile-bottom-safe: 78px; }
+        :root { --selasar-mobile-bottom-safe: 82px; }
+
+        .ai-assistant-widget,
+        .ai-assistant-minimized {
+          transition:
+            transform .18s ease,
+            opacity .18s ease,
+            box-shadow .18s ease;
+        }
+
         @media (max-width: 768px) {
           body { overflow-x: hidden; }
+
           [role="dialog"], [aria-modal="true"], [data-modal="true"],
           .modal, .modal-overlay, .dialog {
-            max-height: calc(100dvh - 96px) !important;
+            max-height: calc(100dvh - 100px) !important;
           }
+
           [role="dialog"] > *, [aria-modal="true"] > * {
-            max-height: calc(100dvh - 110px) !important;
+            max-height: calc(100dvh - 112px) !important;
+          }
+
+          .ai-assistant-widget {
+            right: 12px !important;
+            left: 12px !important;
+            width: auto !important;
+            bottom: calc(84px + env(safe-area-inset-bottom)) !important;
+            max-height: calc(100dvh - 108px - env(safe-area-inset-bottom)) !important;
+          }
+
+          .ai-assistant-history {
+            min-height: 0 !important;
+            height: min(48dvh, 390px) !important;
+          }
+
+          .ai-assistant-composer {
+            padding-bottom: calc(10px + env(safe-area-inset-bottom)) !important;
+          }
+
+          .ai-assistant-send {
+            min-width: 44px !important;
+            min-height: 44px !important;
+          }
+
+          .ai-assistant-minimized {
+            right: 12px !important;
+            bottom: calc(84px + env(safe-area-inset-bottom)) !important;
           }
         }
       `;
@@ -667,15 +1073,29 @@ export function App() {
     }
 
     // InventoryManager lama memakai select satuan yang belum memiliki Liter.
-    // Kita menambahkan opsi secara non-invasif tanpa mengubah data yang sudah ada.
+    // Tambahkan opsi secara aman hanya saat inventory sedang tampil.
     const addLiterOption = () => {
       if (activeTab !== 'inventory') return;
-      const selects = document.querySelectorAll('main select');
-      selects.forEach((select) => {
+
+      document.querySelectorAll('main select').forEach((select) => {
         const options = [...select.options];
-        const text = options.map(o => `${o.value} ${o.textContent}`).join(' ').toLowerCase();
-        const looksLikeUnit = /(^|\s)(ml|mL|mililiter|milliliter|gram|kg|kilogram|pcs|piece|satuan)(\s|$)/i.test(text);
-        if (!looksLikeUnit || [...select.options].some(o => String(o.value).toLowerCase() === 'liter')) return;
+        const text = options
+          .map((o) => `${o.value} ${o.textContent}`)
+          .join(' ')
+          .toLowerCase();
+
+        const looksLikeUnit =
+          /(^|\s)(ml|mililiter|milliliter|gram|kg|kilogram|pcs|piece|pieces|satuan)(\s|$)/i.test(text);
+
+        if (
+          !looksLikeUnit ||
+          [...select.options].some(
+            (o) => String(o.value).toLowerCase() === 'liter'
+          )
+        ) {
+          return;
+        }
+
         const option = document.createElement('option');
         option.value = 'liter';
         option.textContent = 'Liter (L)';
@@ -684,36 +1104,96 @@ export function App() {
       });
     };
 
+    // Naikkan panel/modal mobile dari area bottom-nav tanpa mengganggu
+    // bottom navigation itu sendiri.
     const liftMobileBottomSheets = () => {
       if (window.innerWidth > 768) return;
+
       document.querySelectorAll('body *').forEach((el) => {
         if (el.closest('[aria-label="Asisten Kasir AI"]')) return;
+        if (el.closest('.ai-assistant-minimized')) return;
+
         const cs = window.getComputedStyle(el);
         if (cs.position !== 'fixed') return;
+
         const rect = el.getBoundingClientRect();
         const bottomGap = window.innerHeight - rect.bottom;
-        // Hanya angkat panel/modal besar yang benar-benar menempel di bawah.
-        // Bottom navigation biasanya tingginya < 120px, jadi tidak tersentuh.
+
         if (rect.width > 260 && rect.height > 120 && bottomGap < 18) {
-          el.style.setProperty('bottom', 'calc(82px + env(safe-area-inset-bottom))', 'important');
-          el.style.setProperty('max-height', 'calc(100dvh - 110px)', 'important');
+          el.style.setProperty(
+            'bottom',
+            'calc(84px + env(safe-area-inset-bottom))',
+            'important'
+          );
+          el.style.setProperty(
+            'max-height',
+            'calc(100dvh - 108px)',
+            'important'
+          );
           el.style.setProperty('overflow-y', 'auto', 'important');
         }
       });
     };
 
+    // Pada mobile, ketika kasir berpindah tab atau membuka UI lain,
+    // chat otomatis mengecil agar tidak menabrak menu/cart/modal.
+    const minimizeOnMobileInteraction = (event) => {
+      if (window.innerWidth > 768) return;
+      if (asistenMinimized) return;
+
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+
+      if (
+        target.closest('[aria-label="Asisten Kasir AI"]') ||
+        target.closest('.ai-assistant-minimized')
+      ) {
+        return;
+      }
+
+      const shouldMinimize =
+        target.closest('header') ||
+        target.closest('nav') ||
+        target.closest('[role="dialog"]') ||
+        target.closest('.modal') ||
+        target.closest('.modal-overlay') ||
+        target.closest('[data-modal="true"]') ||
+        target.closest('button');
+
+      if (shouldMinimize) {
+        setAsistenMinimized(true);
+      }
+    };
+
     addLiterOption();
     liftMobileBottomSheets();
+
     const observer = new MutationObserver(() => {
       addLiterOption();
       liftMobileBottomSheets();
     });
-    observer.observe(document.body, { childList: true, subtree: true });
+
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+    });
+
     window.addEventListener('resize', liftMobileBottomSheets);
+    document.addEventListener('click', minimizeOnMobileInteraction, true);
+
     return () => {
       observer.disconnect();
       window.removeEventListener('resize', liftMobileBottomSheets);
+      document.removeEventListener('click', minimizeOnMobileInteraction, true);
+      style?.remove();
     };
+  }, [activeTab, asistenMinimized]);
+
+  // Berpindah halaman di mobile => chat otomatis minimize.
+  useEffect(() => {
+    if (window.innerWidth <= 768) {
+      setAsistenMinimized(true);
+    }
   }, [activeTab]);
 
   useEffect(() => {
@@ -1512,201 +1992,139 @@ ATURAN:
 
       </main>
 
-      {/* ── Asisten Kasir AI ─────────────────────────────────────────────── */}
+      {/* ── Asisten Kasir AI — theme-aware, mobile-safe ───────────────────── */}
       {asistenMinimized ? (
         <button
           type="button"
+          className="ai-assistant-minimized"
           aria-label="Buka Asisten Kasir AI"
-          onClick={() => setAsistenMinimized(false)}
-          style={{
-            position: 'fixed',
-            right: '14px',
-            bottom: 'calc(78px + env(safe-area-inset-bottom))',
-            width: '52px',
-            height: '52px',
-            zIndex: 1200,
-            border: '1px solid rgba(255,255,255,.25)',
-            borderRadius: '50%',
-            background: 'linear-gradient(135deg, var(--primary, #6f4e37), #9a6b45)',
-            color: '#fff',
-            boxShadow: '0 10px 28px rgba(0,0,0,.22)',
-            cursor: 'pointer',
-            fontSize: '21px',
-            display: 'grid',
-            placeItems: 'center',
+          aria-expanded="false"
+          onClick={(event) => {
+            event.stopPropagation();
+            setAsistenMinimized(false);
           }}
         >
-          ✦
+          <span className="ai-assistant-minimized-icon">✦</span>
+          <span className="ai-assistant-minimized-dot" />
         </button>
       ) : (
         <section
+          className="ai-assistant-widget"
           aria-label="Asisten Kasir AI"
-          style={{
-            position: 'fixed',
-            right: '14px',
-            bottom: 'calc(82px + env(safe-area-inset-bottom))',
-            width: 'min(390px, calc(100vw - 28px))',
-            maxHeight: 'min(620px, calc(100dvh - 110px))',
-            zIndex: 1200,
-            border: '1px solid var(--border, rgba(0,0,0,.10))',
-            borderRadius: '18px',
-            background: 'var(--surface, #ffffff)',
-            boxShadow: '0 18px 45px rgba(0,0,0,.18)',
-            overflow: 'hidden',
-          }}
+          role="dialog"
         >
-          <div
-            style={{
-              padding: '12px 14px',
-              background: 'linear-gradient(135deg, var(--primary, #6f4e37), #9a6b45)',
-              color: '#fff',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: '10px',
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
-              <div
-                style={{
-                  width: '34px', height: '34px', borderRadius: '10px',
-                  display: 'grid', placeItems: 'center',
-                  background: 'rgba(255,255,255,.18)', fontSize: '18px', flexShrink: 0,
-                }}
-              >
-                ✦
-              </div>
-              <div style={{ minWidth: 0 }}>
-                <div style={{ fontWeight: 800, fontSize: '14px' }}>Asisten Kasir AI</div>
-                <div style={{ opacity: 0.85, fontSize: '11px', marginTop: '2px' }}>
-                  Operator POS · data toko langsung
-                </div>
+          <header className="ai-assistant-header">
+            <div className="ai-assistant-brand">
+              <div className="ai-assistant-mark">✦</div>
+              <div className="ai-assistant-heading">
+                <strong>Asisten Kasir AI</strong>
+                <span>Operator POS · terhubung ke data toko</span>
               </div>
             </div>
+
             <button
               type="button"
+              className="ai-assistant-minimize"
               aria-label="Minimalkan Asisten Kasir AI"
-              onClick={() => setAsistenMinimized(true)}
-              style={{
-                width: '32px', height: '32px', border: 0, borderRadius: '9px',
-                background: 'rgba(255,255,255,.16)', color: '#fff',
-                cursor: 'pointer', fontSize: '17px', lineHeight: 1, flexShrink: 0,
+              aria-expanded="true"
+              onClick={(event) => {
+                event.stopPropagation();
+                setAsistenMinimized(true);
               }}
             >
-              −
+              <span aria-hidden="true">−</span>
             </button>
-          </div>
+          </header>
 
-          <div
-            style={{
-              padding: '12px 14px',
-              height: 'min(470px, calc(100dvh - 220px))',
-              overflowY: 'auto',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '10px',
-              background: 'var(--surface, #fff)',
-            }}
-          >
+          <div className="ai-assistant-history" role="log" aria-live="polite">
             {riwayatAsisten.length === 0 && (
-              <div style={{
-                margin: 'auto 0',
-                textAlign: 'center',
-                color: 'var(--text-muted, #888)',
-                fontSize: '12px',
-                lineHeight: 1.6,
-                padding: '18px 10px',
-              }}>
-                Tanyakan apa saja soal POS, shift, penjualan, menu, atau bahan baku.
+              <div className="ai-assistant-empty">
+                <div className="ai-assistant-empty-mark">✦</div>
+                <strong>Siap membantu operasional kedai.</strong>
+                <span>
+                  Tanya stok, penjualan, shift, menu, member, atau minta saya
+                  menjalankan aksi di POS.
+                </span>
               </div>
             )}
 
             {riwayatAsisten.map((message) => {
               const isUser = message.role === 'user';
+
               return (
                 <div
                   key={message.id}
-                  style={{
-                    alignSelf: isUser ? 'flex-end' : 'flex-start',
-                    maxWidth: '88%',
-                    padding: '10px 12px',
-                    borderRadius: isUser ? '14px 14px 4px 14px' : '14px 14px 14px 4px',
-                    background: isUser ? 'var(--primary, #6f4e37)' : 'var(--surface-soft, rgba(0,0,0,.05))',
-                    color: isUser ? '#fff' : 'var(--text, inherit)',
-                    fontSize: '12px',
-                    lineHeight: 1.55,
-                    whiteSpace: 'pre-wrap',
-                    wordBreak: 'break-word',
-                  }}
+                  className={`ai-message-row ${isUser ? 'user' : 'assistant'}`}
                 >
-                  {message.content}
+                  {!isUser && (
+                    <div className="ai-message-avatar" aria-hidden="true">
+                      ✦
+                    </div>
+                  )}
+
+                  <div
+                    className={`ai-message-bubble ${
+                      isUser ? 'user' : 'assistant'
+                    }`}
+                  >
+                    {message.content}
+                  </div>
                 </div>
               );
             })}
 
             {asistenLoading && (
-              <div
-                style={{
-                  alignSelf: 'flex-start',
-                  padding: '10px 12px',
-                  borderRadius: '14px 14px 14px 4px',
-                  background: 'var(--surface-soft, rgba(0,0,0,.05))',
-                  color: 'var(--text-muted, #888)',
-                  fontSize: '12px',
-                }}
-              >
-                Memproses…
+              <div className="ai-message-row assistant">
+                <div className="ai-message-avatar" aria-hidden="true">
+                  ✦
+                </div>
+
+                <div className="ai-message-bubble assistant ai-message-loading">
+                  <span />
+                  <span />
+                  <span />
+                  <em>Memproses…</em>
+                </div>
               </div>
             )}
+
             <div ref={asistenChatEndRef} />
           </div>
 
-          <div style={{ padding: '10px 14px 12px', borderTop: '1px solid var(--border, rgba(0,0,0,.08))', background: 'var(--surface, #fff)' }}>
+          <div className="ai-assistant-composer">
             <form onSubmit={tanyaAsistenKasir}>
-              <textarea
-                value={pertanyaanAsisten}
-                onChange={(event) => setPertanyaanAsisten(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter' && !event.shiftKey) {
-                    event.preventDefault();
-                    void tanyaAsistenKasir(event);
+              <div className="ai-assistant-input-wrap">
+                <textarea
+                  value={pertanyaanAsisten}
+                  onChange={(event) =>
+                    setPertanyaanAsisten(event.target.value)
                   }
-                }}
-                placeholder="Contoh: tampilkan stok bahan baku"
-                rows={2}
-                disabled={asistenLoading}
-                style={{
-                  width: '100%', resize: 'none', boxSizing: 'border-box',
-                  padding: '10px 11px', borderRadius: '11px',
-                  border: '1px solid var(--border, rgba(0,0,0,.12))',
-                  background: 'var(--input-bg, transparent)', color: 'var(--text, inherit)',
-                  outline: 'none', fontFamily: 'inherit', fontSize: '12px',
-                }}
-              />
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' && !event.shiftKey) {
+                      event.preventDefault();
+                      void tanyaAsistenKasir(event);
+                    }
+                  }}
+                  placeholder="Tulis perintah atau pertanyaan…"
+                  rows={2}
+                  disabled={asistenLoading}
+                  aria-label="Pesan untuk Asisten Kasir AI"
+                />
 
-              <div
-                style={{
-                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                  gap: '8px', marginTop: '8px', flexWrap: 'wrap',
-                }}
-              >
-                <span style={{ fontSize: '10px', color: 'var(--text-muted, #888)' }}>
-                  Enter kirim · Shift+Enter baris baru
-                </span>
                 <button
                   type="submit"
+                  className="ai-assistant-send"
                   disabled={asistenLoading || !pertanyaanAsisten.trim()}
-                  style={{
-                    border: 0, borderRadius: '10px', padding: '9px 13px',
-                    background: asistenLoading || !pertanyaanAsisten.trim()
-                      ? 'rgba(111,78,55,.35)' : 'var(--primary, #6f4e37)',
-                    color: '#fff', fontWeight: 700, fontSize: '11px',
-                    cursor: asistenLoading || !pertanyaanAsisten.trim() ? 'not-allowed' : 'pointer',
-                    whiteSpace: 'nowrap',
-                  }}
+                  aria-label="Kirim pesan"
+                  title="Kirim pesan"
                 >
-                  {asistenLoading ? 'Memproses...' : 'Tanya AI'}
+                  {asistenLoading ? '…' : '➤'}
                 </button>
+              </div>
+
+              <div className="ai-assistant-hint">
+                <span>Enter kirim · Shift+Enter baris baru</span>
+                <span>AI dapat membaca &amp; menjalankan aksi POS</span>
               </div>
             </form>
           </div>
