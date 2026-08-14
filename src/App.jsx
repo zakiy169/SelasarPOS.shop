@@ -1,3 +1,4 @@
+import puter from '@heyputer/puter.js';
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Header } from './components/Header';
 import { PosScreen } from './components/POS/PosScreen';
@@ -140,6 +141,18 @@ export function App() {
   const [theme, setTheme] = useState(() => localStorage.getItem('selasar_theme') || 'light');
   const [showBluetoothModal, setShowBluetoothModal] = useState(false);
   const [tableForNewOrder, setTableForNewOrder] = useState(null);
+
+  // Asisten Kasir AI (Puter.js)
+  const [pertanyaanAsisten, setPertanyaanAsisten] = useState('');
+  const [jawabanAsisten, setJawabanAsisten] = useState('');
+  const [asistenLoading, setAsistenLoading] = useState(false);
+  const [asistenMinimized, setAsistenMinimized] = useState(() => localStorage.getItem('selasar_ai_minimized') === 'true');
+  const [riwayatAsisten, setRiwayatAsisten] = useState([]);
+  const asistenChatEndRef = useRef(null);
+
+  useEffect(() => {
+    asistenChatEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+  }, [riwayatAsisten, asistenLoading, asistenMinimized]);
 
   // Authentication User State
   const [currentUserRole, setCurrentUserRole] = useState(null);
@@ -628,7 +641,548 @@ export function App() {
     document.body.style.setProperty('font-family', fontStack, 'important');
   }, [appSettings.font]);
 
+  // ── Mobile UI safeguards ────────────────────────────────────────────────
+  // Menambahkan ruang aman di atas bottom navigation dan mengangkat dialog
+  // dari bagian paling bawah layar pada perangkat kecil.
+  useEffect(() => {
+    const styleId = 'selasar-mobile-ui-fix';
+    let style = document.getElementById(styleId);
+    if (!style) {
+      style = document.createElement('style');
+      style.id = styleId;
+      style.textContent = `
+        :root { --selasar-mobile-bottom-safe: 78px; }
+        @media (max-width: 768px) {
+          body { overflow-x: hidden; }
+          [role="dialog"], [aria-modal="true"], [data-modal="true"],
+          .modal, .modal-overlay, .dialog {
+            max-height: calc(100dvh - 96px) !important;
+          }
+          [role="dialog"] > *, [aria-modal="true"] > * {
+            max-height: calc(100dvh - 110px) !important;
+          }
+        }
+      `;
+      document.head.appendChild(style);
+    }
+
+    // InventoryManager lama memakai select satuan yang belum memiliki Liter.
+    // Kita menambahkan opsi secara non-invasif tanpa mengubah data yang sudah ada.
+    const addLiterOption = () => {
+      if (activeTab !== 'inventory') return;
+      const selects = document.querySelectorAll('main select');
+      selects.forEach((select) => {
+        const options = [...select.options];
+        const text = options.map(o => `${o.value} ${o.textContent}`).join(' ').toLowerCase();
+        const looksLikeUnit = /(^|\s)(ml|mL|mililiter|milliliter|gram|kg|kilogram|pcs|piece|satuan)(\s|$)/i.test(text);
+        if (!looksLikeUnit || [...select.options].some(o => String(o.value).toLowerCase() === 'liter')) return;
+        const option = document.createElement('option');
+        option.value = 'liter';
+        option.textContent = 'Liter (L)';
+        option.dataset.selasarLiter = 'true';
+        select.appendChild(option);
+      });
+    };
+
+    const liftMobileBottomSheets = () => {
+      if (window.innerWidth > 768) return;
+      document.querySelectorAll('body *').forEach((el) => {
+        if (el.closest('[aria-label="Asisten Kasir AI"]')) return;
+        const cs = window.getComputedStyle(el);
+        if (cs.position !== 'fixed') return;
+        const rect = el.getBoundingClientRect();
+        const bottomGap = window.innerHeight - rect.bottom;
+        // Hanya angkat panel/modal besar yang benar-benar menempel di bawah.
+        // Bottom navigation biasanya tingginya < 120px, jadi tidak tersentuh.
+        if (rect.width > 260 && rect.height > 120 && bottomGap < 18) {
+          el.style.setProperty('bottom', 'calc(82px + env(safe-area-inset-bottom))', 'important');
+          el.style.setProperty('max-height', 'calc(100dvh - 110px)', 'important');
+          el.style.setProperty('overflow-y', 'auto', 'important');
+        }
+      });
+    };
+
+    addLiterOption();
+    liftMobileBottomSheets();
+    const observer = new MutationObserver(() => {
+      addLiterOption();
+      liftMobileBottomSheets();
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+    window.addEventListener('resize', liftMobileBottomSheets);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('resize', liftMobileBottomSheets);
+    };
+  }, [activeTab]);
+
+  useEffect(() => {
+    localStorage.setItem('selasar_ai_minimized', String(asistenMinimized));
+  }, [asistenMinimized]);
+
   // ── Handlers ────────────────────────────────────────────────────────────
+
+  // AI OPERATOR: tool yang dieksekusi langsung oleh aplikasi POS.
+  // AI tidak sekadar menjawab; ia memanggil fungsi-fungsi di bawah untuk
+  // mengubah state POS yang kemudian ikut tersinkron ke Supabase/localStorage.
+  const aiResult = (ok, message, extra = {}) =>
+    JSON.stringify({ ok, message, ...extra });
+
+  const aiGetShiftStatus = () =>
+    JSON.stringify({ active: Boolean(activeShift), shift: activeShift || null });
+
+  const aiOpenShift = ({ name = 'Shift AI', openingCash = 0 } = {}) => {
+    if (activeShift) {
+      return aiResult(false, `Shift masih aktif: ${activeShift.name || activeShift.id || 'shift aktif'}.`);
+    }
+    const shift = {
+      id: `shift-${Date.now()}`,
+      name: String(name || 'Shift AI'),
+      startTime: new Date().toISOString(),
+      openingCash: Number(openingCash) || 0,
+    };
+    setActiveShift(shift);
+    setActiveTab('shift');
+    return aiResult(true, `Shift "${shift.name}" berhasil dinyalakan.`, { shift });
+  };
+
+  const aiCloseShift = ({ closingCash, note = '' } = {}) => {
+    if (!activeShift) return aiResult(false, 'Tidak ada shift aktif.');
+    const closedName = activeShift.name || activeShift.id || 'shift';
+    handleCloseShift({
+      ...(closingCash !== undefined ? { closingCash: Number(closingCash) || 0 } : {}),
+      note: String(note || ''),
+      closingTime: new Date().toISOString(),
+    });
+    setActiveTab('shift');
+    return aiResult(true, `Shift "${closedName}" berhasil dimatikan.`);
+  };
+
+  const aiUpdateShift = ({ name, openingCash, startTime } = {}) => {
+    if (!activeShift) return aiResult(false, 'Tidak ada shift aktif.');
+    const updated = {
+      ...activeShift,
+      ...(name !== undefined ? { name: String(name) } : {}),
+      ...(openingCash !== undefined ? { openingCash: Number(openingCash) || 0 } : {}),
+      ...(startTime !== undefined ? { startTime: String(startTime) } : {}),
+    };
+    setActiveShift(updated);
+    return aiResult(true, 'Shift aktif berhasil diperbarui.', { shift: updated });
+  };
+
+  // ── AI read tools ───────────────────────────────────────────────────────
+  // Semua fungsi di bawah membaca STATE POS yang sedang aktif. Jadi AI tidak
+  // mengarang data dan tidak bergantung pada jawaban model sebelumnya.
+  const aiToolGetInventory = ({ search = '' } = {}) => {
+    const q = String(search || '').trim().toLowerCase();
+    const rows = inventory
+      .filter(item => {
+        if (!q) return true;
+        const haystack = [item?.name, item?.ingredientName, item?.category, item?.unit, item?.satuan]
+          .filter(Boolean).join(' ').toLowerCase();
+        return haystack.includes(q);
+      })
+      .map(item => ({
+        id: item?.id,
+        name: item?.name || item?.ingredientName || '-',
+        stock: Number(item?.stock ?? item?.quantity ?? 0) || 0,
+        unit: item?.unit || item?.satuan || '',
+        minStock: Number(item?.minStock ?? item?.minimumStock ?? item?.reorderPoint ?? 0) || 0,
+        category: item?.category || '',
+      }));
+
+    const lowStock = rows.filter(x => x.minStock > 0 && x.stock <= x.minStock);
+    return aiResult(true, `Ditemukan ${rows.length} bahan.`, {
+      inventory: rows,
+      lowStock,
+      totalItems: rows.length,
+    });
+  };
+
+  const aiToolGetSalesSummary = ({ period = 'today' } = {}) => {
+    const now = new Date();
+    const days = period === '30d' ? 30 : period === '7d' ? 7 : 1;
+    const start = new Date(now);
+    start.setHours(0, 0, 0, 0);
+    start.setDate(start.getDate() - (days - 1));
+
+    const getTxDate = tx => new Date(tx?.createdAt || tx?.date || tx?.timestamp || tx?.time || 0);
+    const relevant = transactions.filter(tx => {
+      const d = getTxDate(tx);
+      return !Number.isNaN(d.getTime()) && d >= start && d <= now;
+    });
+
+    const total = relevant.reduce((sum, tx) => sum + (Number(tx?.total ?? tx?.grandTotal ?? tx?.amount ?? 0) || 0), 0);
+    const paid = relevant.filter(tx => String(tx?.status || '').toLowerCase() !== 'void');
+    const paidTotal = paid.reduce((sum, tx) => sum + (Number(tx?.total ?? tx?.grandTotal ?? tx?.amount ?? 0) || 0), 0);
+
+    return aiResult(true, `Ringkasan penjualan ${period}.`, {
+      period,
+      transactionCount: relevant.length,
+      validTransactionCount: paid.length,
+      omzet: paidTotal,
+      totalIncludingVoided: total,
+      averageTransaction: paid.length ? Math.round(paidTotal / paid.length) : 0,
+    });
+  };
+
+  const aiToolGetTopProducts = ({ period = 'today', limit = 5 } = {}) => {
+    const now = new Date();
+    const days = period === '30d' ? 30 : period === '7d' ? 7 : 1;
+    const start = new Date(now);
+    start.setHours(0, 0, 0, 0);
+    start.setDate(start.getDate() - (days - 1));
+
+    const relevant = transactions.filter(tx => {
+      const d = new Date(tx?.createdAt || tx?.date || tx?.timestamp || tx?.time || 0);
+      return !Number.isNaN(d.getTime()) && d >= start && d <= now && String(tx?.status || '').toLowerCase() !== 'void';
+    });
+
+    const counts = new Map();
+    for (const tx of relevant) {
+      const items = Array.isArray(tx?.items) ? tx.items : [];
+      for (const item of items) {
+        const id = String(item?.productId ?? item?.id ?? item?.product_id ?? item?.name ?? 'unknown');
+        const name = item?.name || item?.productName || 'Produk';
+        const qty = Number(item?.quantity ?? item?.qty ?? 1) || 0;
+        const prev = counts.get(id) || { id, name, quantity: 0 };
+        prev.quantity += qty;
+        counts.set(id, prev);
+      }
+    }
+
+    const top = [...counts.values()].sort((a, b) => b.quantity - a.quantity).slice(0, Math.max(1, Number(limit) || 5));
+    return aiResult(true, `Produk terlaris ${period}.`, { period, products: top });
+  };
+
+  const aiToolSearchProducts = ({ search = '' } = {}) => {
+    const q = String(search || '').trim().toLowerCase();
+    const found = products
+      .filter(p => !q || [p?.name, p?.title, p?.category].filter(Boolean).join(' ').toLowerCase().includes(q))
+      .map(p => ({
+        id: p?.id,
+        name: p?.name || p?.title || '-',
+        price: Number(p?.price ?? p?.sellingPrice ?? 0) || 0,
+        category: p?.category || '',
+        isAvailable: p?.isAvailable !== false,
+      }));
+    return aiResult(true, `Ditemukan ${found.length} produk.`, { products: found });
+  };
+
+  const aiUpdateInventory = ({ itemId, addStock, patch = {} } = {}) => {
+    const item = inventory.find(x => String(x?.id) === String(itemId));
+    if (!item) return aiResult(false, `Bahan dengan ID ${itemId} tidak ditemukan.`);
+    const nextPatch = { ...patch };
+    if (addStock !== undefined) {
+      nextPatch.stock = (Number(item.stock ?? item.quantity ?? 0) || 0) + (Number(addStock) || 0);
+    }
+    setInventory(prev => prev.map(x => String(x.id) === String(itemId) ? { ...x, ...nextPatch } : x));
+    return aiResult(true, `Bahan "${item.name || item.ingredientName || itemId}" berhasil diperbarui.`, { patch: nextPatch });
+  };
+
+  const aiAddInventory = ({ item = {} } = {}) => {
+    const newItem = {
+      id: item.id || `inventory-${Date.now()}`,
+      name: item.name || item.ingredientName || 'Bahan Baru',
+      stock: Number(item.stock ?? item.quantity ?? 0) || 0,
+      unit: item.unit || item.satuan || '',
+      minStock: Number(item.minStock ?? item.minimumStock ?? item.reorderPoint ?? 0) || 0,
+      ...item,
+    };
+    setInventory(prev => [newItem, ...prev]);
+    return aiResult(true, `Bahan "${newItem.name}" berhasil ditambahkan.`, { item: newItem });
+  };
+
+  const aiDeleteInventory = ({ itemId } = {}) => {
+    const item = inventory.find(x => String(x?.id) === String(itemId));
+    if (!item) return aiResult(false, `Bahan dengan ID ${itemId} tidak ditemukan.`);
+    setInventory(prev => prev.filter(x => String(x.id) !== String(itemId)));
+    return aiResult(true, `Bahan "${item.name || itemId}" berhasil dihapus.`);
+  };
+
+  const aiUpdateProduct = ({ productId, patch = {} } = {}) => {
+    const product = products.find(x => String(x?.id) === String(productId));
+    if (!product) return aiResult(false, `Produk ${productId} tidak ditemukan.`);
+    setProducts(prev => prev.map(x => String(x.id) === String(productId) ? { ...x, ...patch, id: x.id } : x));
+    return aiResult(true, `Produk "${product.name || product.title || productId}" berhasil diperbarui.`);
+  };
+
+  const aiAddProduct = ({ product = {} } = {}) => {
+    const newProduct = {
+      id: product.id || `product-${Date.now()}`,
+      name: product.name || product.title || 'Produk Baru',
+      price: Number(product.price ?? product.sellingPrice ?? 0) || 0,
+      isAvailable: product.isAvailable !== false,
+      ...product,
+    };
+    setProducts(prev => [newProduct, ...prev]);
+    return aiResult(true, `Produk "${newProduct.name || newProduct.title}" berhasil ditambahkan.`, { product: newProduct });
+  };
+
+  const aiDeleteProduct = ({ productId } = {}) => {
+    const product = products.find(x => String(x?.id) === String(productId));
+    if (!product) return aiResult(false, `Produk ${productId} tidak ditemukan.`);
+    setProducts(prev => prev.filter(x => String(x.id) !== String(productId)));
+    return aiResult(true, `Produk "${product.name || productId}" berhasil dihapus.`);
+  };
+
+  const aiSetProductAvailability = ({ productId, isAvailable } = {}) => {
+    const product = products.find(x => String(x?.id) === String(productId));
+    if (!product) return aiResult(false, `Produk ${productId} tidak ditemukan.`);
+    handleToggleProductAvailability(productId);
+    if (Boolean(product.isAvailable) !== Boolean(isAvailable)) {
+      // handler toggle sudah tepat bila target berbeda; bila sama, toggle sekali lagi.
+    } else {
+      handleToggleProductAvailability(productId);
+    }
+    return aiResult(true, `Ketersediaan "${product.name || productId}" diubah menjadi ${isAvailable ? 'tersedia' : 'tidak tersedia'}.`);
+  };
+
+  const aiUpdateMember = ({ memberId, patch = {} } = {}) => {
+    const member = members.find(x => String(x?.id) === String(memberId));
+    if (!member) return aiResult(false, `Member ${memberId} tidak ditemukan.`);
+    handleUpdateMember({ ...member, ...patch, id: member.id });
+    return aiResult(true, `Member "${member.name || memberId}" berhasil diperbarui.`);
+  };
+
+  const aiAddMember = ({ member = {} } = {}) => {
+    const newMember = { id: member.id || `member-${Date.now()}`, ...member };
+    handleAddMember(newMember);
+    return aiResult(true, `Member "${newMember.name || newMember.id}" berhasil ditambahkan.`);
+  };
+
+  const aiDeleteMember = ({ memberId } = {}) => {
+    const member = members.find(x => String(x?.id) === String(memberId));
+    if (!member) return aiResult(false, `Member ${memberId} tidak ditemukan.`);
+    setMembers(prev => prev.filter(x => String(x.id) !== String(memberId)));
+    return aiResult(true, `Member "${member.name || memberId}" berhasil dihapus.`);
+  };
+
+  const aiSaveTable = ({ table = {} } = {}) => {
+    const next = {
+      id: table.id || `table-${Date.now()}`,
+      name: table.name || `Meja ${tables.length + 1}`,
+      status: table.status || 'available',
+      ...table,
+    };
+    handleSaveTable(next);
+    return aiResult(true, `Meja "${next.name}" berhasil disimpan.`, { table: next });
+  };
+
+  const aiDeleteTable = ({ tableId } = {}) => {
+    const table = tables.find(x => String(x?.id) === String(tableId));
+    if (!table) return aiResult(false, `Meja ${tableId} tidak ditemukan.`);
+    handleDeleteTable(tableId);
+    return aiResult(true, `Meja "${table.name || tableId}" berhasil dihapus.`);
+  };
+
+  const aiVoidTransaction = ({ transactionId } = {}) => {
+    const tx = transactions.find(x => String(x?.id) === String(transactionId));
+    if (!tx) return aiResult(false, `Transaksi ${transactionId} tidak ditemukan.`);
+    handleVoidTransaction(transactionId);
+    return aiResult(true, `Transaksi ${transactionId} berhasil di-void.`);
+  };
+
+  const aiUpdateTransaction = ({ transactionId, patch = {} } = {}) => {
+    const tx = transactions.find(x => String(x?.id) === String(transactionId));
+    if (!tx) return aiResult(false, `Transaksi ${transactionId} tidak ditemukan.`);
+    handleUpdateTransaction({ ...tx, ...patch, id: tx.id });
+    return aiResult(true, `Transaksi ${transactionId} berhasil diperbarui.`);
+  };
+
+  const aiUpdateOrderStatus = ({ orderId, status } = {}) => {
+    if (!transactions.some(x => String(x?.id) === String(orderId))) {
+      return aiResult(false, `Order ${orderId} tidak ditemukan.`);
+    }
+    handleUpdateOrderStatus(orderId, status);
+    return aiResult(true, `Status order ${orderId} diubah menjadi ${status}.`);
+  };
+
+  const aiNavigate = ({ tab } = {}) => {
+    const aliases = { kasir:'pos',pos:'pos',dapur:'kds',kds:'kds',laporan:'reports',menu:'menu',
+      inventory:'inventory',stok:'inventory',meja:'tables',member:'loyalty',loyalty:'loyalty',
+      shift:'shift',pengaturan:'settings',settings:'settings',struk:'receipt',receipt:'receipt' };
+    const next = aliases[String(tab || '').toLowerCase()] || tab;
+    const allowed = ['pos','kds','reports','menu','inventory','tables','loyalty','shift','settings','receipt'];
+    if (!allowed.includes(next)) return aiResult(false, `Halaman "${tab}" tidak tersedia.`);
+    setActiveTab(next);
+    return aiResult(true, `Membuka halaman ${next}.`);
+  };
+
+  const aiSetTheme = ({ theme: nextTheme } = {}) => {
+    if (!['light','dark','espresso','warm'].includes(nextTheme)) return aiResult(false, 'Tema tidak tersedia.');
+    setTheme(nextTheme);
+    return aiResult(true, `Tema diubah ke ${nextTheme}.`);
+  };
+
+  const aiUpdateSettings = ({ patch = {} } = {}) => {
+    setAppSettings(prev => ({ ...prev, ...patch }));
+    return aiResult(true, 'Pengaturan aplikasi berhasil diperbarui.');
+  };
+
+  const asistenKasirTools = [
+    { type:'function', function:{ name:'get_shift_status', description:'Cek status dan detail shift aktif.', parameters:{type:'object',properties:{},required:[]} } },
+    { type:'function', function:{ name:'open_shift', description:'Nyalakan/buka shift baru. Jalankan saat user meminta buka/nyalakan shift.', parameters:{type:'object',properties:{name:{type:'string'},openingCash:{type:'number'}},required:[]} } },
+    { type:'function', function:{ name:'close_shift', description:'Matikan/tutup shift aktif. Jalankan saat user meminta tutup/matikan shift.', parameters:{type:'object',properties:{closingCash:{type:'number'},note:{type:'string'}},required:[]} } },
+    { type:'function', function:{ name:'update_shift', description:'Ubah data shift aktif.', parameters:{type:'object',properties:{name:{type:'string'},openingCash:{type:'number'},startTime:{type:'string'}},required:[]} } },
+    { type:'function', function:{ name:'get_inventory', description:'Baca stok bahan.', parameters:{type:'object',properties:{search:{type:'string'}},required:[]} } },
+    { type:'function', function:{ name:'update_inventory', description:'Tambah/kurangi/set data stok berdasarkan ID.', parameters:{type:'object',properties:{itemId:{type:'string'},addStock:{type:'number'},patch:{type:'object'}},required:['itemId']} } },
+    { type:'function', function:{ name:'add_inventory', description:'Tambah bahan baru.', parameters:{type:'object',properties:{item:{type:'object'}},required:['item']} } },
+    { type:'function', function:{ name:'delete_inventory', description:'Hapus bahan.', parameters:{type:'object',properties:{itemId:{type:'string'}},required:['itemId']} } },
+    { type:'function', function:{ name:'get_sales_summary', description:'Ringkasan penjualan hari ini/7 hari/30 hari.', parameters:{type:'object',properties:{period:{type:'string',enum:['today','7d','30d']}},required:['period']} } },
+    { type:'function', function:{ name:'get_top_products', description:'Produk terlaris.', parameters:{type:'object',properties:{period:{type:'string',enum:['today','7d','30d']},limit:{type:'number'}},required:['period']} } },
+    { type:'function', function:{ name:'search_products', description:'Cari menu berdasarkan nama.', parameters:{type:'object',properties:{search:{type:'string'}},required:['search']} } },
+    { type:'function', function:{ name:'add_product', description:'Tambah menu baru.', parameters:{type:'object',properties:{product:{type:'object'}},required:['product']} } },
+    { type:'function', function:{ name:'update_product', description:'Ubah menu/harga/kategori/dll.', parameters:{type:'object',properties:{productId:{type:'string'},patch:{type:'object'}},required:['productId','patch']} } },
+    { type:'function', function:{ name:'delete_product', description:'Hapus menu.', parameters:{type:'object',properties:{productId:{type:'string'}},required:['productId']} } },
+    { type:'function', function:{ name:'set_product_availability', description:'Aktif/nonaktifkan menu.', parameters:{type:'object',properties:{productId:{type:'string'},isAvailable:{type:'boolean'}},required:['productId','isAvailable']} } },
+    { type:'function', function:{ name:'add_member', description:'Tambah member.', parameters:{type:'object',properties:{member:{type:'object'}},required:['member']} } },
+    { type:'function', function:{ name:'update_member', description:'Ubah member.', parameters:{type:'object',properties:{memberId:{type:'string'},patch:{type:'object'}},required:['memberId','patch']} } },
+    { type:'function', function:{ name:'delete_member', description:'Hapus member.', parameters:{type:'object',properties:{memberId:{type:'string'}},required:['memberId']} } },
+    { type:'function', function:{ name:'save_table', description:'Buat atau ubah meja.', parameters:{type:'object',properties:{table:{type:'object'}},required:['table']} } },
+    { type:'function', function:{ name:'delete_table', description:'Hapus meja.', parameters:{type:'object',properties:{tableId:{type:'string'}},required:['tableId']} } },
+    { type:'function', function:{ name:'update_transaction', description:'Ubah transaksi.', parameters:{type:'object',properties:{transactionId:{type:'string'},patch:{type:'object'}},required:['transactionId','patch']} } },
+    { type:'function', function:{ name:'void_transaction', description:'Void/batalkan transaksi.', parameters:{type:'object',properties:{transactionId:{type:'string'}},required:['transactionId']} } },
+    { type:'function', function:{ name:'update_order_status', description:'Ubah status pesanan KDS/POS.', parameters:{type:'object',properties:{orderId:{type:'string'},status:{type:'string'}},required:['orderId','status']} } },
+    { type:'function', function:{ name:'navigate', description:'Buka halaman POS tertentu.', parameters:{type:'object',properties:{tab:{type:'string'}},required:['tab']} } },
+    { type:'function', function:{ name:'set_theme', description:'Ubah tema aplikasi.', parameters:{type:'object',properties:{theme:{type:'string',enum:['light','dark','espresso','warm']}},required:['theme']} } },
+    { type:'function', function:{ name:'update_settings', description:'Ubah pengaturan aplikasi.', parameters:{type:'object',properties:{patch:{type:'object'}},required:['patch']} } },
+  ];
+
+  const executeAsistenTool = (name, args) => {
+    switch (name) {
+      case 'get_shift_status': return aiGetShiftStatus();
+      case 'open_shift': return aiOpenShift(args);
+      case 'close_shift': return aiCloseShift(args);
+      case 'update_shift': return aiUpdateShift(args);
+      case 'get_inventory': return aiToolGetInventory(args);
+      case 'update_inventory': return aiUpdateInventory(args);
+      case 'add_inventory': return aiAddInventory(args);
+      case 'delete_inventory': return aiDeleteInventory(args);
+      case 'get_sales_summary': return aiToolGetSalesSummary(args);
+      case 'get_top_products': return aiToolGetTopProducts(args);
+      case 'search_products': return aiToolSearchProducts(args);
+      case 'add_product': return aiAddProduct(args);
+      case 'update_product': return aiUpdateProduct(args);
+      case 'delete_product': return aiDeleteProduct(args);
+      case 'set_product_availability': return aiSetProductAvailability(args);
+      case 'add_member': return aiAddMember(args);
+      case 'update_member': return aiUpdateMember(args);
+      case 'delete_member': return aiDeleteMember(args);
+      case 'save_table': return aiSaveTable(args);
+      case 'delete_table': return aiDeleteTable(args);
+      case 'update_transaction': return aiUpdateTransaction(args);
+      case 'void_transaction': return aiVoidTransaction(args);
+      case 'update_order_status': return aiUpdateOrderStatus(args);
+      case 'navigate': return aiNavigate(args);
+      case 'set_theme': return aiSetTheme(args);
+      case 'update_settings': return aiUpdateSettings(args);
+      default: return aiResult(false, `Tool "${name}" tidak tersedia.`);
+    }
+  };
+
+  // Kirim pertanyaan ke Asisten Kasir AI. AI sekarang dapat membaca dan
+  // menjalankan aksi nyata pada POS melalui function calling Puter.
+  const tanyaAsistenKasir = async (event) => {
+    event?.preventDefault();
+    const pertanyaan = pertanyaanAsisten.trim();
+    if (!pertanyaan || asistenLoading) return;
+
+    setAsistenLoading(true);
+    setJawabanAsisten('');
+    setRiwayatAsisten(prev => [...prev, { role: 'user', content: pertanyaan, id: `user-${Date.now()}-${prev.length}` }]);
+    setPertanyaanAsisten('');
+
+    try {
+      const systemPrompt = `
+Kamu adalah Asisten Kasir AI sekaligus operator Kedai Kopi Selasar.
+Kamu terhubung langsung ke POS dan memiliki tools untuk membaca serta menjalankan aksi nyata.
+
+ATURAN:
+- Jika user meminta DATA/INFORMASI dari POS, WAJIB panggil tool baca yang sesuai sebelum menjawab. Jangan mengatakan tool tidak ada jika tool tercantum di daftar tools.
+- Untuk pertanyaan stok, bahan baku, inventory, persediaan, atau 'lihat bahan', WAJIB panggil get_inventory tanpa search jika user meminta daftar umum, atau isi search jika menyebut nama bahan.
+- Untuk pertanyaan omzet/penjualan, WAJIB panggil get_sales_summary. Untuk produk terlaris, WAJIB panggil get_top_products. Untuk mencari menu, WAJIB panggil search_products.
+- Jika user meminta melakukan sesuatu di aplikasi, JALANKAN tool yang sesuai. Jangan hanya memberi tutorial.
+- Untuk membuka/menyalakan atau menutup/mematikan shift, langsung gunakan open_shift/close_shift.
+- Untuk stok, menu, member, meja, transaksi, status order, navigasi, tema, dan pengaturan gunakan tool yang tersedia.
+- Setelah tool berhasil, jelaskan perubahan yang benar-benar terjadi.
+- Jangan pernah mengklaim berhasil jika tool mengembalikan ok:false.
+- Jangan mengarang ID/data. Jika perlu ID, gunakan tool pencarian/data yang tersedia terlebih dahulu.
+- Untuk penghapusan atau void, hanya lakukan jika user memang meminta tindakan tersebut secara eksplisit.
+- Gunakan bahasa Indonesia yang natural, singkat, dan praktis.
+`;
+
+      const historyForModel = [...riwayatAsisten, { role: 'user', content: pertanyaan }]
+        .map(item => ({ role: item.role, content: item.content }));
+      let messages = [
+        { role:'system', content:systemPrompt },
+        ...historyForModel,
+      ];
+
+      let response = await puter.ai.chat(messages, {
+        tools: asistenKasirTools,
+        temperature: 0.15,
+        max_tokens: 900,
+      });
+
+      for (let round = 0; round < 6; round += 1) {
+        const toolCalls = response?.message?.tool_calls || [];
+        if (!toolCalls.length) break;
+
+        messages = [...messages, response.message];
+
+        for (const toolCall of toolCalls) {
+          let args = {};
+          try {
+            args = toolCall?.function?.arguments ? JSON.parse(toolCall.function.arguments) : {};
+          } catch {
+            args = {};
+          }
+
+          let result;
+          try {
+            result = executeAsistenTool(toolCall?.function?.name, args);
+          } catch (toolError) {
+            console.error('AI tool error:', toolError);
+            result = aiResult(false, toolError?.message || 'Tool gagal dijalankan.');
+          }
+
+          messages.push({
+            role:'tool',
+            tool_call_id:toolCall.id,
+            content:typeof result === 'string' ? result : JSON.stringify(result),
+          });
+        }
+
+        response = await puter.ai.chat(messages, {
+          tools: asistenKasirTools,
+          temperature: 0.15,
+          max_tokens: 900,
+        });
+      }
+
+      const content = response?.message?.content;
+      const jawaban = typeof content === 'string'
+        ? content
+        : Array.isArray(content)
+          ? content.map(x => typeof x === 'string' ? x : x?.text || '').filter(Boolean).join('\n')
+          : typeof response?.text === 'string'
+            ? response.text
+            : typeof response === 'string' ? response : '';
+
+      const finalJawaban = jawaban || 'Perintah selesai dijalankan.';
+      setJawabanAsisten(finalJawaban);
+      setRiwayatAsisten(prev => [...prev, { role: 'assistant', content: finalJawaban, id: `assistant-${Date.now()}-${prev.length}` }]);
+    } catch (error) {
+      console.error('Gagal menjalankan Asisten Kasir AI:', error);
+      const errorText = `Asisten AI gagal menjalankan perintah: ${error?.message || 'Silakan coba lagi.'}`;
+      setJawabanAsisten(errorText);
+      setRiwayatAsisten(prev => [...prev, { role: 'assistant', content: errorText, id: `assistant-error-${Date.now()}-${prev.length}` }]);
+    } finally {
+      setAsistenLoading(false);
+    }
+  };
+
   const handleAddTransaction = (newTx) => {
     setTransactions(prev => [newTx, ...prev]);
     if (newTx.customerType === 'Dine-In' && newTx.tableName) {
@@ -910,6 +1464,7 @@ export function App() {
           <InventoryManager
             inventory={inventory}
             setInventory={setInventory}
+            unitOptions={['gr', 'kg', 'ml', 'liter', 'pcs']}
           />
         )}
 
@@ -956,6 +1511,207 @@ export function App() {
         )}
 
       </main>
+
+      {/* ── Asisten Kasir AI ─────────────────────────────────────────────── */}
+      {asistenMinimized ? (
+        <button
+          type="button"
+          aria-label="Buka Asisten Kasir AI"
+          onClick={() => setAsistenMinimized(false)}
+          style={{
+            position: 'fixed',
+            right: '14px',
+            bottom: 'calc(78px + env(safe-area-inset-bottom))',
+            width: '52px',
+            height: '52px',
+            zIndex: 1200,
+            border: '1px solid rgba(255,255,255,.25)',
+            borderRadius: '50%',
+            background: 'linear-gradient(135deg, var(--primary, #6f4e37), #9a6b45)',
+            color: '#fff',
+            boxShadow: '0 10px 28px rgba(0,0,0,.22)',
+            cursor: 'pointer',
+            fontSize: '21px',
+            display: 'grid',
+            placeItems: 'center',
+          }}
+        >
+          ✦
+        </button>
+      ) : (
+        <section
+          aria-label="Asisten Kasir AI"
+          style={{
+            position: 'fixed',
+            right: '14px',
+            bottom: 'calc(82px + env(safe-area-inset-bottom))',
+            width: 'min(390px, calc(100vw - 28px))',
+            maxHeight: 'min(620px, calc(100dvh - 110px))',
+            zIndex: 1200,
+            border: '1px solid var(--border, rgba(0,0,0,.10))',
+            borderRadius: '18px',
+            background: 'var(--surface, #ffffff)',
+            boxShadow: '0 18px 45px rgba(0,0,0,.18)',
+            overflow: 'hidden',
+          }}
+        >
+          <div
+            style={{
+              padding: '12px 14px',
+              background: 'linear-gradient(135deg, var(--primary, #6f4e37), #9a6b45)',
+              color: '#fff',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '10px',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+              <div
+                style={{
+                  width: '34px', height: '34px', borderRadius: '10px',
+                  display: 'grid', placeItems: 'center',
+                  background: 'rgba(255,255,255,.18)', fontSize: '18px', flexShrink: 0,
+                }}
+              >
+                ✦
+              </div>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontWeight: 800, fontSize: '14px' }}>Asisten Kasir AI</div>
+                <div style={{ opacity: 0.85, fontSize: '11px', marginTop: '2px' }}>
+                  Operator POS · data toko langsung
+                </div>
+              </div>
+            </div>
+            <button
+              type="button"
+              aria-label="Minimalkan Asisten Kasir AI"
+              onClick={() => setAsistenMinimized(true)}
+              style={{
+                width: '32px', height: '32px', border: 0, borderRadius: '9px',
+                background: 'rgba(255,255,255,.16)', color: '#fff',
+                cursor: 'pointer', fontSize: '17px', lineHeight: 1, flexShrink: 0,
+              }}
+            >
+              −
+            </button>
+          </div>
+
+          <div
+            style={{
+              padding: '12px 14px',
+              height: 'min(470px, calc(100dvh - 220px))',
+              overflowY: 'auto',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '10px',
+              background: 'var(--surface, #fff)',
+            }}
+          >
+            {riwayatAsisten.length === 0 && (
+              <div style={{
+                margin: 'auto 0',
+                textAlign: 'center',
+                color: 'var(--text-muted, #888)',
+                fontSize: '12px',
+                lineHeight: 1.6,
+                padding: '18px 10px',
+              }}>
+                Tanyakan apa saja soal POS, shift, penjualan, menu, atau bahan baku.
+              </div>
+            )}
+
+            {riwayatAsisten.map((message) => {
+              const isUser = message.role === 'user';
+              return (
+                <div
+                  key={message.id}
+                  style={{
+                    alignSelf: isUser ? 'flex-end' : 'flex-start',
+                    maxWidth: '88%',
+                    padding: '10px 12px',
+                    borderRadius: isUser ? '14px 14px 4px 14px' : '14px 14px 14px 4px',
+                    background: isUser ? 'var(--primary, #6f4e37)' : 'var(--surface-soft, rgba(0,0,0,.05))',
+                    color: isUser ? '#fff' : 'var(--text, inherit)',
+                    fontSize: '12px',
+                    lineHeight: 1.55,
+                    whiteSpace: 'pre-wrap',
+                    wordBreak: 'break-word',
+                  }}
+                >
+                  {message.content}
+                </div>
+              );
+            })}
+
+            {asistenLoading && (
+              <div
+                style={{
+                  alignSelf: 'flex-start',
+                  padding: '10px 12px',
+                  borderRadius: '14px 14px 14px 4px',
+                  background: 'var(--surface-soft, rgba(0,0,0,.05))',
+                  color: 'var(--text-muted, #888)',
+                  fontSize: '12px',
+                }}
+              >
+                Memproses…
+              </div>
+            )}
+            <div ref={asistenChatEndRef} />
+          </div>
+
+          <div style={{ padding: '10px 14px 12px', borderTop: '1px solid var(--border, rgba(0,0,0,.08))', background: 'var(--surface, #fff)' }}>
+            <form onSubmit={tanyaAsistenKasir}>
+              <textarea
+                value={pertanyaanAsisten}
+                onChange={(event) => setPertanyaanAsisten(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' && !event.shiftKey) {
+                    event.preventDefault();
+                    void tanyaAsistenKasir(event);
+                  }
+                }}
+                placeholder="Contoh: tampilkan stok bahan baku"
+                rows={2}
+                disabled={asistenLoading}
+                style={{
+                  width: '100%', resize: 'none', boxSizing: 'border-box',
+                  padding: '10px 11px', borderRadius: '11px',
+                  border: '1px solid var(--border, rgba(0,0,0,.12))',
+                  background: 'var(--input-bg, transparent)', color: 'var(--text, inherit)',
+                  outline: 'none', fontFamily: 'inherit', fontSize: '12px',
+                }}
+              />
+
+              <div
+                style={{
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                  gap: '8px', marginTop: '8px', flexWrap: 'wrap',
+                }}
+              >
+                <span style={{ fontSize: '10px', color: 'var(--text-muted, #888)' }}>
+                  Enter kirim · Shift+Enter baris baru
+                </span>
+                <button
+                  type="submit"
+                  disabled={asistenLoading || !pertanyaanAsisten.trim()}
+                  style={{
+                    border: 0, borderRadius: '10px', padding: '9px 13px',
+                    background: asistenLoading || !pertanyaanAsisten.trim()
+                      ? 'rgba(111,78,55,.35)' : 'var(--primary, #6f4e37)',
+                    color: '#fff', fontWeight: 700, fontSize: '11px',
+                    cursor: asistenLoading || !pertanyaanAsisten.trim() ? 'not-allowed' : 'pointer',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {asistenLoading ? 'Memproses...' : 'Tanya AI'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </section>
+      )}
 
       {showBluetoothModal && (
         <BluetoothModal
