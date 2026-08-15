@@ -121,6 +121,41 @@ const isEmptyOrganizationSnapshot = (snapshot = {}) => {
 
 const isDefaultSetupProfile = (appSettings = {}) => {
   const profile = appSettings.profile || {};
+
+
+  return (
+    (profile.businessName || 'Kedai Kopi Selasar') === 'Kedai Kopi Selasar' &&
+    (profile.ownerName || 'Owner') === 'Owner' &&
+    (profile.ownerPin || '8888') === '8888' &&
+    (profile.cashierPin || '1234') === '1234'
+  );
+};
+
+const shouldRequireOnboarding = (snapshot = {}) => {
+  const settings = snapshot.app_settings || {};
+  if (settings.onboardingCompleted === false) return true;
+  if ('onboardingCompleted' in settings) return false;
+  return isEmptyOrganizationSnapshot(snapshot) && isDefaultSetupProfile(settings);
+};
+
+export function App() {
+  const [activeTab, setActiveTab] = useState('pos');
+  const [theme, setTheme] = useState(() => localStorage.getItem('selasar_theme') || 'light');
+  const [showBluetoothModal, setShowBluetoothModal] = useState(false);
+  const [tableForNewOrder, setTableForNewOrder] = useState(null);
+
+  // Asisten Kasir AI (Puter.js)
+  const [pertanyaanAsisten, setPertanyaanAsisten] = useState('');
+  const [jawabanAsisten, setJawabanAsisten] = useState('');
+  const [asistenLoading, setAsistenLoading] = useState(false);
+  const [asistenMinimized, setAsistenMinimized] = useState(() => localStorage.getItem('selasar_ai_minimized') === 'true');
+  const [riwayatAsisten, setRiwayatAsisten] = useState([]);
+  const asistenChatEndRef = useRef(null);
+
+  useEffect(() => {
+    asistenChatEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+  }, [riwayatAsisten, asistenLoading, asistenMinimized]);
+
   // Self-contained AI widget styling so App.jsx can be replaced by itself.
   useEffect(() => {
     const styleId = 'selasar-ai-widget-style';
@@ -490,41 +525,37 @@ const isDefaultSetupProfile = (appSettings = {}) => {
     };
   }, []);
 
-  return (
-    (profile.businessName || 'Kedai Kopi Selasar') === 'Kedai Kopi Selasar' &&
-    (profile.ownerName || 'Owner') === 'Owner' &&
-    (profile.ownerPin || '8888') === '8888' &&
-    (profile.cashierPin || '1234') === '1234'
-  );
-};
-
-const shouldRequireOnboarding = (snapshot = {}) => {
-  const settings = snapshot.app_settings || {};
-  if (settings.onboardingCompleted === false) return true;
-  if ('onboardingCompleted' in settings) return false;
-  return isEmptyOrganizationSnapshot(snapshot) && isDefaultSetupProfile(settings);
-};
-
-export function App() {
-  const [activeTab, setActiveTab] = useState('pos');
-  const [theme, setTheme] = useState(() => localStorage.getItem('selasar_theme') || 'light');
-  const [showBluetoothModal, setShowBluetoothModal] = useState(false);
-  const [tableForNewOrder, setTableForNewOrder] = useState(null);
-
-  // Asisten Kasir AI (Puter.js)
-  const [pertanyaanAsisten, setPertanyaanAsisten] = useState('');
-  const [jawabanAsisten, setJawabanAsisten] = useState('');
-  const [asistenLoading, setAsistenLoading] = useState(false);
-  const [asistenMinimized, setAsistenMinimized] = useState(() => localStorage.getItem('selasar_ai_minimized') === 'true');
-  const [riwayatAsisten, setRiwayatAsisten] = useState([]);
-  const asistenChatEndRef = useRef(null);
-
+  // Global numeric input UX: select a zero value on focus so typing replaces it.
   useEffect(() => {
-    asistenChatEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
-  }, [riwayatAsisten, asistenLoading, asistenMinimized]);
+    const handleNumericInputFocus = (event) => {
+      const input = event.target;
+
+      if (!(input instanceof HTMLInputElement)) return;
+      if (input.type !== 'number') return;
+      if (input.disabled || input.readOnly) return;
+
+      const rawValue = String(input.value ?? '').trim();
+      const isZeroValue = /^0+(?:\.0+)?$/.test(rawValue);
+      if (!isZeroValue) return;
+
+      requestAnimationFrame(() => {
+        try {
+          input.select();
+        } catch {
+          // Ignore browsers that do not allow programmatic selection.
+        }
+      });
+    };
+
+    document.addEventListener('focusin', handleNumericInputFocus, true);
+    return () => {
+      document.removeEventListener('focusin', handleNumericInputFocus, true);
+    };
+  }, []);
 
   // Authentication User State
   const [currentUserRole, setCurrentUserRole] = useState(null);
+  // Plan/subscription nanti dibaca dari organization; untuk sekarang semua akun default Free.
   const [authenticatedUser, setAuthenticatedUser] = useState(null);
   const [pinVerified, setPinVerified] = useState(false);
   const [authLoading, setAuthLoading] = useState(true);
@@ -695,6 +726,8 @@ export function App() {
         setSyncStatus('connecting');
       }
 
+      // Akun baru otomatis mendapatkan workspace pribadi.
+      // Existing accounts tetap memakai organization/membership yang sudah ada.
       const { data: memberships, error: membershipError } = await supabase
         .from('organization_members')
         .select('organization_id, role')
@@ -712,19 +745,35 @@ export function App() {
       }
 
       let membership = memberships?.[0];
+
       if (!membership) {
+        // Database function ini idempotent: bila workspace sudah ada,
+        // ia mengembalikan workspace tersebut; jika belum ada, ia membuat
+        // organization + membership owner + snapshot awal + profile linkage.
         const { data: organizationId, error: organizationError } = await supabase
-          .rpc('create_organization', { org_name: 'Toko Baru' });
-        if (organizationError) {
-          console.error('Gagal membuat organisasi awal:', organizationError.message);
+          .rpc('ensure_user_workspace');
+
+        if (organizationError || !organizationId) {
+          console.error(
+            'Gagal menyiapkan workspace pengguna:',
+            organizationError?.message || 'organization_id kosong'
+          );
           authSyncInFlightRef.current = null;
           if (isMounted) {
-            setAuthError(`Gagal membuat workspace toko: ${organizationError.message}`);
+            setAuthError(
+              `Gagal menyiapkan workspace akun: ${
+                organizationError?.message || 'workspace tidak dapat dibuat'
+              }`
+            );
             setAuthLoading(false);
           }
           return;
         }
-        membership = { organization_id: organizationId, role: 'owner' };
+
+        membership = {
+          organization_id: organizationId,
+          role: 'owner'
+        };
       }
 
       if (isMounted) {
