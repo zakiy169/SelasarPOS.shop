@@ -179,7 +179,15 @@ export function App() {
   const asistenChatEndRef = useRef(null);
 
   useEffect(() => {
-    asistenChatEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    // Scroll hanya di area riwayat chat. Jangan gunakan scrollIntoView()
+    // karena pada Safari/iPhone ia bisa ikut menggeser halaman utama ke atas.
+    if (asistenMinimized) return;
+    const history = asistenChatEndRef.current?.parentElement;
+    if (!history) return;
+
+    requestAnimationFrame(() => {
+      history.scrollTop = history.scrollHeight;
+    });
   }, [riwayatAsisten, asistenLoading, asistenMinimized]);
 
   // Self-contained AI widget styling so App.jsx can be replaced by itself.
@@ -191,20 +199,63 @@ export function App() {
       style = document.createElement('style');
       style.id = styleId;
       style.textContent = `
+        /* AI theme variables are defined here so the widget does not depend
+           on unrelated page variables that may differ between themes. */
+        :root {
+          --selasar-ai-bg: #ffffff;
+          --selasar-ai-bg-muted: #f5f7fb;
+          --selasar-ai-text: #1f2937;
+          --selasar-ai-muted: #6b7280;
+          --selasar-ai-line: rgba(148,163,184,.24);
+          --selasar-ai-accent: #0071e3;
+          --selasar-ai-accent-2: #0057b8;
+        }
+
+        html[data-theme="dark"] {
+          --selasar-ai-bg: #111827;
+          --selasar-ai-bg-muted: #1f2937;
+          --selasar-ai-text: #f9fafb;
+          --selasar-ai-muted: #9ca3af;
+          --selasar-ai-line: rgba(255,255,255,.12);
+          --selasar-ai-accent: #2f8cff;
+          --selasar-ai-accent-2: #1565c0;
+        }
+
+        html[data-theme="espresso"] {
+          --selasar-ai-bg: #2a211b;
+          --selasar-ai-bg-muted: #3a2d24;
+          --selasar-ai-text: #fff7ed;
+          --selasar-ai-muted: #c9b8a8;
+          --selasar-ai-line: rgba(255,247,237,.14);
+          --selasar-ai-accent: #b97842;
+          --selasar-ai-accent-2: #7a4b2b;
+        }
+
+        html[data-theme="warm"] {
+          --selasar-ai-bg: #fffaf2;
+          --selasar-ai-bg-muted: #fff0dc;
+          --selasar-ai-text: #3b2a1f;
+          --selasar-ai-muted: #8b6f5d;
+          --selasar-ai-line: rgba(139,111,93,.22);
+          --selasar-ai-accent: #b96832;
+          --selasar-ai-accent-2: #8f4d25;
+        }
+
         .ai-assistant-widget {
           position: fixed;
           right: 14px;
           bottom: calc(82px + env(safe-area-inset-bottom));
           width: min(410px, calc(100vw - 28px));
-          max-height: min(650px, calc(100dvh - 112px));
+          height: min(620px, calc(100dvh - 112px));
+          max-height: min(620px, calc(100dvh - 112px));
           display: flex;
           flex-direction: column;
           overflow: hidden;
-          z-index: 350;
-          border: 1px solid var(--ui-line, rgba(148,163,184,.28));
+          z-index: 230;
+          border: 1px solid var(--selasar-ai-line);
           border-radius: 20px;
-          background: var(--ui-surface, #ffffff);
-          color: var(--text-main, #111827);
+          background: var(--selasar-ai-bg);
+          color: var(--selasar-ai-text);
           box-shadow: 0 18px 50px rgba(15,23,42,.16);
           backdrop-filter: blur(18px);
           -webkit-backdrop-filter: blur(18px);
@@ -216,12 +267,12 @@ export function App() {
           justify-content: space-between;
           gap: 10px;
           padding: 12px 14px;
-          border-bottom: 1px solid var(--ui-line, rgba(148,163,184,.22));
+          border-bottom: 1px solid var(--selasar-ai-line);
           background:
             linear-gradient(
               135deg,
-              color-mix(in srgb, var(--apple-blue, #2563eb) 12%, var(--ui-surface, #fff)),
-              var(--ui-surface, #fff)
+              color-mix(in srgb, var(--selasar-ai-accent) 18%, var(--selasar-ai-bg)),
+              var(--selasar-ai-bg)
             );
         }
 
@@ -239,9 +290,9 @@ export function App() {
           display: grid;
           place-items: center;
           border-radius: 11px;
-          background: var(--apple-blue, #2563eb);
+          background: var(--selasar-ai-accent);
           color: #fff;
-          box-shadow: 0 8px 18px color-mix(in srgb, var(--apple-blue, #2563eb) 26%, transparent);
+          box-shadow: 0 8px 18px color-mix(in srgb, var(--selasar-ai-accent) 26%, transparent);
           font-size: 18px;
         }
 
@@ -255,12 +306,12 @@ export function App() {
         .ai-assistant-heading strong {
           font-size: 13px;
           font-weight: 800;
-          color: var(--text-main, #111827);
+          color: var(--selasar-ai-text);
         }
 
         .ai-assistant-heading span {
           font-size: 10px;
-          color: var(--text-muted, #6b7280);
+          color: var(--selasar-ai-muted);
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
@@ -268,9 +319,9 @@ export function App() {
 
         .ai-assistant-minimize,
         .ai-assistant-minimized {
-          border: 1px solid var(--ui-line, rgba(148,163,184,.24));
-          background: var(--ui-surface, #fff);
-          color: var(--text-main, #111827);
+          border: 1px solid var(--selasar-ai-line);
+          background: var(--selasar-ai-bg);
+          color: var(--selasar-ai-text);
           cursor: pointer;
           box-shadow: 0 8px 20px rgba(15,23,42,.10);
         }
@@ -287,15 +338,15 @@ export function App() {
         }
 
         .ai-assistant-history {
-          flex: 1;
-          min-height: 250px;
-          height: min(470px, 48dvh);
+          flex: 1 1 auto;
+          min-height: 0;
+          height: auto;
           overflow-y: auto;
           padding: 14px;
           display: flex;
           flex-direction: column;
           gap: 10px;
-          background: var(--ui-surface, #fff);
+          background: var(--selasar-ai-bg);
           -webkit-overflow-scrolling: touch;
           overscroll-behavior: contain;
         }
@@ -310,7 +361,7 @@ export function App() {
           text-align: center;
           gap: 7px;
           padding: 20px;
-          color: var(--text-muted, #6b7280);
+          color: var(--selasar-ai-muted);
         }
 
         .ai-assistant-empty-mark {
@@ -319,14 +370,14 @@ export function App() {
           display: grid;
           place-items: center;
           border-radius: 13px;
-          background: color-mix(in srgb, var(--apple-blue, #2563eb) 10%, var(--ui-surface, #fff));
-          color: var(--apple-blue, #2563eb);
+          background: color-mix(in srgb, var(--selasar-ai-accent) 10%, var(--selasar-ai-bg));
+          color: var(--selasar-ai-accent);
           font-size: 20px;
           margin-bottom: 4px;
         }
 
         .ai-assistant-empty strong {
-          color: var(--text-main, #111827);
+          color: var(--selasar-ai-text);
           font-size: 13px;
         }
 
@@ -358,8 +409,8 @@ export function App() {
           display: grid;
           place-items: center;
           border-radius: 9px;
-          background: color-mix(in srgb, var(--apple-blue, #2563eb) 11%, var(--ui-surface, #fff));
-          color: var(--apple-blue, #2563eb);
+          background: color-mix(in srgb, var(--selasar-ai-accent) 11%, var(--selasar-ai-bg));
+          color: var(--selasar-ai-accent);
           font-size: 13px;
         }
 
@@ -374,15 +425,15 @@ export function App() {
         }
 
         .ai-message-bubble.user {
-          background: var(--apple-blue, #2563eb);
+          background: var(--selasar-ai-accent);
           color: #fff;
           border-bottom-right-radius: 5px;
         }
 
         .ai-message-bubble.assistant {
-          background: color-mix(in srgb, var(--ui-surface-muted, #f5f7fb) 92%, transparent);
-          color: var(--text-main, #111827);
-          border: 1px solid var(--ui-line, rgba(148,163,184,.18));
+          background: color-mix(in srgb, var(--selasar-ai-bg-muted) 92%, transparent);
+          color: var(--selasar-ai-text);
+          border: 1px solid var(--selasar-ai-line);
           border-bottom-left-radius: 5px;
         }
 
@@ -396,7 +447,7 @@ export function App() {
           width: 5px;
           height: 5px;
           border-radius: 50%;
-          background: var(--apple-blue, #2563eb);
+          background: var(--selasar-ai-accent);
           animation: selasarAiDot 1.1s infinite ease-in-out;
         }
 
@@ -406,14 +457,14 @@ export function App() {
         .ai-message-loading em {
           margin-left: 4px;
           font-style: normal;
-          color: var(--text-muted, #6b7280);
+          color: var(--selasar-ai-muted);
         }
 
         .ai-assistant-composer {
           flex: 0 0 auto;
           padding: 10px 12px calc(12px + env(safe-area-inset-bottom));
-          border-top: 1px solid var(--ui-line, rgba(148,163,184,.22));
-          background: var(--ui-surface, #fff);
+          border-top: 1px solid var(--selasar-ai-line);
+          background: var(--selasar-ai-bg);
         }
 
         .ai-assistant-input-wrap {
@@ -421,7 +472,7 @@ export function App() {
           align-items: flex-end;
           gap: 8px;
           padding: 6px;
-          border: 1px solid var(--ui-line, rgba(148,163,184,.25));
+          border: 1px solid var(--selasar-ai-line);
           border-radius: 15px;
           background: var(--ui-surface-muted, #f8fafc);
         }
@@ -435,7 +486,7 @@ export function App() {
           border: 0;
           outline: 0;
           background: transparent;
-          color: var(--text-main, #111827);
+          color: var(--selasar-ai-text);
           padding: 7px 8px;
           font: inherit;
           font-size: 12px;
@@ -454,11 +505,11 @@ export function App() {
           border-radius: 12px;
           display: grid;
           place-items: center;
-          background: var(--apple-blue, #2563eb);
+          background: var(--selasar-ai-accent);
           color: #fff;
           font-size: 16px;
           cursor: pointer;
-          box-shadow: 0 7px 16px color-mix(in srgb, var(--apple-blue, #2563eb) 24%, transparent);
+          box-shadow: 0 7px 16px color-mix(in srgb, var(--selasar-ai-accent) 24%, transparent);
         }
 
         .ai-assistant-send:disabled {
@@ -475,7 +526,7 @@ export function App() {
           margin-top: 7px;
           padding: 0 3px;
           font-size: 9px;
-          color: var(--text-muted, #6b7280);
+          color: var(--selasar-ai-muted);
         }
 
         .ai-assistant-minimized {
@@ -489,11 +540,11 @@ export function App() {
           border-radius: 50%;
           display: grid;
           place-items: center;
-          background: var(--ui-surface, #fff);
+          background: var(--selasar-ai-bg);
         }
 
         .ai-assistant-minimized-icon {
-          color: var(--apple-blue, #2563eb);
+          color: var(--selasar-ai-accent);
           font-size: 22px;
           line-height: 1;
         }
@@ -506,7 +557,7 @@ export function App() {
           height: 8px;
           border-radius: 50%;
           background: #22c55e;
-          border: 2px solid var(--ui-surface, #fff);
+          border: 2px solid var(--selasar-ai-bg);
         }
 
         @keyframes selasarAiDot {
@@ -516,12 +567,19 @@ export function App() {
 
         @media (max-width: 768px) {
           .ai-assistant-widget {
-            right: 12px;
-            left: 12px;
-            bottom: calc(84px + env(safe-area-inset-bottom));
-            width: auto;
-            max-height: calc(100dvh - 108px - env(safe-area-inset-bottom));
+            right: 10px !important;
+            left: 10px !important;
+            bottom: calc(78px + env(safe-area-inset-bottom)) !important;
+            width: auto !important;
+            height: min(58dvh, 520px) !important;
+            max-height: min(58dvh, 520px) !important;
+            min-height: 360px !important;
             border-radius: 18px;
+          }
+
+          .ai-assistant-header {
+            flex: 0 0 58px;
+            padding: 9px 11px;
           }
 
           .ai-assistant-heading span {
@@ -529,8 +587,17 @@ export function App() {
           }
 
           .ai-assistant-history {
-            height: min(48dvh, 390px);
-            min-height: 200px;
+            flex: 1 1 auto !important;
+            min-height: 0 !important;
+            height: auto !important;
+            max-height: none !important;
+            overflow-y: auto !important;
+            overscroll-behavior: contain;
+          }
+
+          .ai-assistant-composer {
+            flex: 0 0 auto;
+            padding-bottom: calc(9px + env(safe-area-inset-bottom));
           }
 
           .ai-assistant-hint span:last-child {
@@ -539,7 +606,28 @@ export function App() {
 
           .ai-assistant-minimized {
             right: 12px;
-            bottom: calc(84px + env(safe-area-inset-bottom));
+            bottom: calc(78px + env(safe-area-inset-bottom));
+            z-index: 230;
+          }
+        }
+
+        @media (max-width: 480px) {
+          .ai-assistant-widget {
+            right: 8px !important;
+            left: 8px !important;
+            bottom: calc(70px + env(safe-area-inset-bottom)) !important;
+            height: min(54dvh, 455px) !important;
+            max-height: min(54dvh, 455px) !important;
+            min-height: 330px !important;
+            border-radius: 16px;
+          }
+
+          .ai-assistant-history {
+            padding: 10px;
+          }
+
+          .ai-message-bubble {
+            max-width: 88%;
           }
         }
       `;
@@ -1134,16 +1222,19 @@ export function App() {
           }
 
           .ai-assistant-widget {
-            right: 12px !important;
-            left: 12px !important;
+            right: 10px !important;
+            left: 10px !important;
             width: auto !important;
-            bottom: calc(84px + env(safe-area-inset-bottom)) !important;
-            max-height: calc(100dvh - 108px - env(safe-area-inset-bottom)) !important;
+            bottom: calc(78px + env(safe-area-inset-bottom)) !important;
+            height: min(58dvh, 520px) !important;
+            max-height: min(58dvh, 520px) !important;
+            min-height: 360px !important;
           }
 
           .ai-assistant-history {
             min-height: 0 !important;
-            height: min(48dvh, 390px) !important;
+            height: auto !important;
+            max-height: none !important;
           }
 
           .ai-assistant-composer {
@@ -1280,6 +1371,40 @@ export function App() {
       style?.remove();
     };
   }, [activeTab, asistenMinimized]);
+
+  // Ensure the Selasar header branding has a working image asset.
+  // This also fixes older Header builds that still point at a stale logo path.
+  useEffect(() => {
+    const logoSrc = '/selasar-logo-header.png';
+    const patchLogo = () => {
+      document.querySelectorAll('header img, .selasar-header img').forEach((img) => {
+        const alt = String(img.getAttribute('alt') || '').toLowerCase();
+        const src = String(img.getAttribute('src') || '').toLowerCase();
+        const rect = img.getBoundingClientRect();
+        const looksLikeBrand =
+          alt.includes('selasar') ||
+          src.includes('selasar') ||
+          src.includes('logo') ||
+          (rect.left < window.innerWidth * 0.45 && rect.width > 40 && rect.height > 25);
+
+        if (looksLikeBrand) {
+          if (img.getAttribute('src') !== logoSrc) {
+            img.setAttribute('src', logoSrc);
+          }
+          img.style.width = '142px';
+          img.style.height = '52px';
+          img.style.objectFit = 'contain';
+          img.style.objectPosition = 'center';
+          img.style.display = 'block';
+        }
+      });
+    };
+
+    patchLogo();
+    const observer = new MutationObserver(patchLogo);
+    observer.observe(document.body, { childList: true, subtree: true });
+    return () => observer.disconnect();
+  }, []);
 
   // Berpindah halaman di mobile => chat otomatis minimize.
   useEffect(() => {
