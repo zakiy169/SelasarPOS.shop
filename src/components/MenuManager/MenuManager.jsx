@@ -1,9 +1,54 @@
-import React, { useState } from 'react';
-import { Plus, Edit2, Trash2, Save, X, Image as ImageIcon, Sparkles, Layers } from 'lucide-react';
+import React, { useRef, useState } from 'react';
+import { Plus, Edit2, Trash2, Save, X, Image as ImageIcon, Sparkles, Layers, Upload } from 'lucide-react';
 import { formatRupiah } from '../../utils/formatters';
+import { parsePosBackupJson } from '../../utils/jsonImport';
 
-export const MenuManager = ({ products, setProducts, inventory = [] }) => {
+export const MenuManager = ({
+  products,
+  setProducts,
+  inventory = [],
+  transactions = [],
+  setTransactions,
+}) => {
   const [isEditing, setIsEditing] = useState(false);
+  const importFileRef = useRef(null);
+  const [isImporting, setIsImporting] = useState(false);
+
+  const handleImportJson = async (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+
+    try {
+      setIsImporting(true);
+      const text = await file.text();
+      const json = JSON.parse(text);
+      const imported = parsePosBackupJson(json);
+
+      const existingProductIds = new Set((products || []).map((item) => String(item.id)));
+      const existingTransactionIds = new Set((transactions || []).map((item) => String(item.id)));
+
+      const newProducts = imported.products.filter((item) => !existingProductIds.has(String(item.id)));
+      const newTransactions = imported.transactions.filter((item) => !existingTransactionIds.has(String(item.id)));
+
+      if (newProducts.length > 0) {
+        setProducts((prev) => [...newProducts, ...prev]);
+      }
+
+      if (newTransactions.length > 0 && setTransactions) {
+        setTransactions((prev) => [...newTransactions, ...prev]);
+      }
+
+      alert(
+        `Import selesai!\n\nProduk baru: ${newProducts.length}\nTransaksi baru: ${newTransactions.length}`
+      );
+    } catch (error) {
+      console.error('Import JSON gagal:', error);
+      alert(`Import JSON gagal:\n\n${error?.message || 'Format JSON tidak valid.'}`);
+    } finally {
+      setIsImporting(false);
+    }
+  };
   
   const [formData, setFormData] = useState({
     id: '',
@@ -130,9 +175,34 @@ export const MenuManager = ({ products, setProducts, inventory = [] }) => {
             Kelola daftar menu, harga jual, HPP, serta takaran resep yang memotong stok otomatis
           </p>
         </div>
-        <button onClick={() => handleOpenEdit()} className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <Plus size={18} /> Tambah Menu Baru
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <input
+            ref={importFileRef}
+            type="file"
+            accept=".json,application/json"
+            onChange={handleImportJson}
+            style={{ display: 'none' }}
+          />
+          <button
+            type="button"
+            onClick={() => importFileRef.current?.click()}
+            className="btn-primary"
+            disabled={isImporting}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              opacity: isImporting ? 0.6 : 1
+            }}
+          >
+            <Upload size={18} />
+            {isImporting ? 'Mengimport...' : 'Import JSON'}
+          </button>
+
+          <button onClick={() => handleOpenEdit()} className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Plus size={18} /> Tambah Menu Baru
+          </button>
+        </div>
       </div>
 
       <div className="apple-table-container">

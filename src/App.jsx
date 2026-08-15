@@ -679,6 +679,7 @@ export function App() {
   const [needsOnboarding, setNeedsOnboarding] = useState(false);
   const [authError, setAuthError] = useState('');
   const suppressCloudWriteRef = useRef(false);
+  const localCloudWriteAtRef = useRef(0);
   const authUserIdRef = useRef(null);
   const authSyncInFlightRef = useRef(null);
   const initialSessionRetryRef = useRef(false);
@@ -745,6 +746,7 @@ export function App() {
       const nextSnapshot = saveState.pending;
       saveState.pending = null;
       saveState.inFlight = true;
+      localCloudWriteAtRef.current = Date.now();
       setSyncStatus('syncing');
       const { error } = await supabase.from('organization_data').upsert(nextSnapshot, { onConflict: 'organization_id' });
       saveState.inFlight = false;
@@ -1032,8 +1034,13 @@ export function App() {
         table: 'organization_data',
         filter: `organization_id=eq.${activeOrganizationId}`,
       }, ({ new: nextData }) => {
-        applyCloudSnapshot(nextData);
-        setSyncStatus('synced');
+         const recentlySavedByThisDevice =
+    Date.now() - localCloudWriteAtRef.current < 1500;
+
+  if (recentlySavedByThisDevice) {
+    setSyncStatus('synced');
+    return;
+  }
       })
       .subscribe((status) => {
         setSyncStatus(status === 'SUBSCRIBED' ? 'synced' : status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' ? 'offline' : 'connecting');
@@ -2201,10 +2208,12 @@ ATURAN:
 
         {activeTab === 'menu_manager' && currentUserRole === 'owner' && (
           <MenuManager
-            products={products}
-            inventory={inventory}
-            setProducts={setProducts}
-          />
+           products={products}
+           inventory={inventory}
+           setProducts={setProducts}
+           transactions={transactions}
+           setTransactions={setTransactions}
+/>
         )}
 
         {activeTab === 'inventory' && currentUserRole === 'owner' && (
