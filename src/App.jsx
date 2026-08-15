@@ -24,6 +24,32 @@ const FONT_STACKS = {
   inter:   "'Inter', system-ui, -apple-system, sans-serif",
 };
 
+const INVENTORY_UNIT_META = {
+  ml: { family: 'volume', factor: 1, defaultPackSize: 1000 },
+  liter: { family: 'volume', factor: 1000, defaultPackSize: 1 },
+  g: { family: 'weight', factor: 1, defaultPackSize: 1000 },
+  gr: { family: 'weight', factor: 1, defaultPackSize: 1000 },
+  kg: { family: 'weight', factor: 1000, defaultPackSize: 1 },
+  pcs: { family: 'count', factor: 1, defaultPackSize: 1 },
+  cup: { family: 'count', factor: 1, defaultPackSize: 1 },
+};
+
+const getInventoryUnitMeta = (unit) => INVENTORY_UNIT_META[String(unit || '').toLowerCase()] || INVENTORY_UNIT_META.ml;
+
+const getInventoryPackSize = (item = {}) => {
+  const explicit = Number(item?.packSize ?? item?.packageSize ?? item?.package_quantity);
+  if (Number.isFinite(explicit) && explicit > 0) return explicit;
+  return getInventoryUnitMeta(item?.unit || item?.satuan).defaultPackSize;
+};
+
+const convertInventoryQuantity = (value, fromUnit, toUnit) => {
+  const from = getInventoryUnitMeta(fromUnit);
+  const to = getInventoryUnitMeta(toUnit);
+  const amount = Number(value) || 0;
+  if (from.family !== to.family) return amount;
+  return (amount * from.factor) / to.factor;
+};
+
 const getThemeStorageKey = (organizationId) => (organizationId ? `selasar_theme_${organizationId}` : 'selasar_theme');
 const getWorkspaceStorageKey = (organizationId, key) => `selasar_org_${organizationId}_${key}`;
 const LEGACY_WORKSPACE_KEYS = [
@@ -1059,6 +1085,23 @@ export function App() {
     document.body.style.setProperty('font-family', fontStack, 'important');
   }, [appSettings.font]);
 
+  // Global numeric input UX: nilai awal 0 otomatis terseleksi saat fokus.
+  // Jadi ketik 1 langsung menjadi 1, bukan 01.
+  useEffect(() => {
+    const handleNumericInputFocus = (event) => {
+      const input = event.target;
+      if (!(input instanceof HTMLInputElement)) return;
+      if (input.type !== 'number' || input.disabled || input.readOnly) return;
+      const rawValue = String(input.value ?? '').trim();
+      if (!/^0+(?:\.0+)?$/.test(rawValue)) return;
+      requestAnimationFrame(() => {
+        try { input.select(); } catch {}
+      });
+    };
+    document.addEventListener('focusin', handleNumericInputFocus, true);
+    return () => document.removeEventListener('focusin', handleNumericInputFocus, true);
+  }, []);
+
   // ── Mobile UI safeguards ────────────────────────────────────────────────
   useEffect(() => {
     const styleId = 'selasar-mobile-ui-fix';
@@ -1316,6 +1359,8 @@ export function App() {
         name: item?.name || item?.ingredientName || '-',
         stock: Number(item?.stock ?? item?.quantity ?? 0) || 0,
         unit: item?.unit || item?.satuan || '',
+        packSize: getInventoryPackSize(item),
+        packUnitName: item?.packUnitName || item?.packageUnitName || 'Kemasan',
         minStock: Number(item?.minStock ?? item?.minimumStock ?? item?.reorderPoint ?? 0) || 0,
         category: item?.category || '',
       }));
@@ -1398,15 +1443,58 @@ export function App() {
     return aiResult(true, `Ditemukan ${found.length} produk.`, { products: found });
   };
 
-  const aiUpdateInventory = ({ itemId, addStock, patch = {} } = {}) => {
-    const item = inventory.find(x => String(x?.id) === String(itemId));
-    if (!item) return aiResult(false, `Bahan dengan ID ${itemId} tidak ditemukan.`);
-    const nextPatch = { ...patch };
-    if (addStock !== undefined) {
-      nextPatch.stock = (Number(item.stock ?? item.quantity ?? 0) || 0) + (Number(addStock) || 0);
+  const aiUpdateInventory = ({ itemId, itemName, addStock, packages, setStock, patch = {} } = {}) => {
+    let item = itemId
+      ? inventory.find(x => String(x?.id) === String(itemId))
+      : null;
+
+    if (!item && itemName) {
+      const q = String(itemName).trim().toLowerCase();
+      item = inventory.find(x => String(x?.name || x?.ingredientName || '').toLowerCase() === q)
+        || inventory.find(x => String(x?.name || x?.ingredientName || '').toLowerCase().includes(q));
     }
-    setInventory(prev => prev.map(x => String(x.id) === String(itemId) ? { ...x, ...nextPatch } : x));
-    return aiResult(true, `Bahan "${item.name || item.ingredientName || itemId}" berhasil diperbarui.`, { patch: nextPatch });
+
+    if (!item) return aiResult(false, `Bahan "${itemName || itemId || ''}" tidak ditemukan.`);
+
+    const currentStock = Number(item.stock ?? item.quantity ?? 0) || 0;
+    const unit = item?.unit || item?.satuan || 'ml';
+    const packSize = getInventoryPackSize(item);
+    const packUnitName = item?.packUnitName || item?.packageUnitName || 'Kemasan';
+    const nextPatch = { ...patch };
+    let added = 0;
+
+    if (packages !== undefined) {
+      const count = Number(packages);
+      if (!Number.isFinite(count) || count <= 0) {
+        return aiResult(false, 'Jumlah kemasan harus lebih dari 0.');
+      }
+      added = count * packSize;
+      nextPatch.stock = currentStock + added;
+    } else if (addStock !== undefined) {
+      added = Number(addStock) || 0;
+      nextPatch.stock = currentStock + added;
+    } else if (setStock !== undefined) {
+      const nextStock = Number(setStock);
+      if (!Number.isFinite(nextStock) || nextStock < 0) {
+        return aiResult(false, 'Nilai stok tidak valid.');
+      }
+      nextPatch.stock = nextStock;
+    }
+
+    setInventory(prev => prev.map(x => String(x.id) === String(item.id) ? { ...x, ...nextPatch, id: x.id } : x));
+
+    return aiResult(true, `Bahan "${item.name || item.ingredientName || item.id}" berhasil diperbarui.`, {
+      itemId: item.id,
+      name: item.name || item.ingredientName || item.id,
+      previousStock: currentStock,
+      addedStock: added,
+      newStock: nextPatch.stock ?? currentStock,
+      unit,
+      packages: packages !== undefined ? Number(packages) : undefined,
+      packSize,
+      packUnitName,
+      patch: nextPatch,
+    });
   };
 
   const aiAddInventory = ({ item = {} } = {}) => {
@@ -1414,7 +1502,9 @@ export function App() {
       id: item.id || `inventory-${Date.now()}`,
       name: item.name || item.ingredientName || 'Bahan Baru',
       stock: Number(item.stock ?? item.quantity ?? 0) || 0,
-      unit: item.unit || item.satuan || '',
+      unit: item.unit || item.satuan || 'ml',
+      packSize: getInventoryPackSize(item),
+      packUnitName: item.packUnitName || item.packageUnitName || 'Kemasan',
       minStock: Number(item.minStock ?? item.minimumStock ?? item.reorderPoint ?? 0) || 0,
       ...item,
     };
@@ -1554,8 +1644,8 @@ export function App() {
     { type:'function', function:{ name:'open_shift', description:'Nyalakan/buka shift baru. Jalankan saat user meminta buka/nyalakan shift.', parameters:{type:'object',properties:{name:{type:'string'},openingCash:{type:'number'}},required:[]} } },
     { type:'function', function:{ name:'close_shift', description:'Matikan/tutup shift aktif. Jalankan saat user meminta tutup/matikan shift.', parameters:{type:'object',properties:{closingCash:{type:'number'},note:{type:'string'}},required:[]} } },
     { type:'function', function:{ name:'update_shift', description:'Ubah data shift aktif.', parameters:{type:'object',properties:{name:{type:'string'},openingCash:{type:'number'},startTime:{type:'string'}},required:[]} } },
-    { type:'function', function:{ name:'get_inventory', description:'Baca stok bahan.', parameters:{type:'object',properties:{search:{type:'string'}},required:[]} } },
-    { type:'function', function:{ name:'update_inventory', description:'Tambah/kurangi/set data stok berdasarkan ID.', parameters:{type:'object',properties:{itemId:{type:'string'},addStock:{type:'number'},patch:{type:'object'}},required:['itemId']} } },
+    { type:'function', function:{ name:'get_inventory', description:'Baca stok bahan beserta satuan stok dan isi 1 kemasan (packSize). Wajib dipakai sebelum restock berdasarkan jumlah kemasan.', parameters:{type:'object',properties:{search:{type:'string'}},required:[]} } },
+    { type:'function', function:{ name:'update_inventory', description:'Ubah stok bahan. Untuk RESTOCK berdasarkan pembelian kemasan, WAJIB gunakan packages (jumlah kemasan), bukan addStock. Sistem otomatis menghitung packages × packSize bahan. Gunakan itemName bila nama bahan sudah diketahui; jika belum, panggil get_inventory dulu.', parameters:{type:'object',properties:{itemId:{type:'string'},itemName:{type:'string'},packages:{type:'number',description:'Jumlah kemasan yang dibeli. Contoh 3 berarti 3 kemasan, lalu sistem mengalikan dengan isi 1 kemasan.'},addStock:{type:'number',description:'Penambahan langsung dalam satuan stok dasar. Hanya gunakan jika user memang menyebut jumlah satuan dasar.'},setStock:{type:'number',description:'Set stok absolut dalam satuan stok dasar.'},patch:{type:'object'}},required:[]} } },
     { type:'function', function:{ name:'add_inventory', description:'Tambah bahan baru.', parameters:{type:'object',properties:{item:{type:'object'}},required:['item']} } },
     { type:'function', function:{ name:'delete_inventory', description:'Hapus bahan.', parameters:{type:'object',properties:{itemId:{type:'string'}},required:['itemId']} } },
     { type:'function', function:{ name:'get_sales_summary', description:'Ringkasan penjualan hari ini/7 hari/30 hari.', parameters:{type:'object',properties:{period:{type:'string',enum:['today','7d','30d']}},required:['period']} } },
@@ -1634,6 +1724,9 @@ ATURAN:
 - Jika user meminta melakukan sesuatu di aplikasi, JALANKAN tool yang sesuai. Jangan hanya memberi tutorial.
 - Untuk membuka/menyalakan atau menutup/mematikan shift, langsung gunakan open_shift/close_shift.
 - Untuk stok, menu, member, meja, transaksi, status order, navigasi, tema, dan pengaturan gunakan tool yang tersedia.
+- LOGIKA RESTOCK BAHAN BAKU: angka seperti 'tambah susu 1/2/3' berarti JUMLAH KEMASAN, bukan 1/2/3 ml atau gram. WAJIB baca get_inventory terlebih dahulu agar mengetahui packSize bahan tersebut. Setelah itu gunakan update_inventory dengan packages. Jangan mengarang packSize dan jangan menggunakan angka 999 sebagai koreksi.
+- Contoh: jika Susu Diamond memiliki unit 'ml' dan packSize 1000, maka 'tambah susu Diamond 1' = +1000 ml; 3 = +3000 ml. Jika bahan memiliki unit 'liter' dan packSize 1, maka 1 kemasan = +1 liter.
+- packSize bersifat per-bahan. Jangan menganggap semua bahan cair 1000 ml atau semua bahan berat 1000 g jika data bahan memiliki packSize eksplisit.
 - Setelah tool berhasil, jelaskan perubahan yang benar-benar terjadi.
 - Jangan pernah mengklaim berhasil jika tool mengembalikan ok:false.
 - Jangan mengarang ID/data. Jika perlu ID, gunakan tool pencarian/data yang tersedia terlebih dahulu.

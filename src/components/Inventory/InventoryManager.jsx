@@ -15,8 +15,30 @@ import { sounds } from '../../utils/audio';
 
 const getDefaultPackSize = (unit) => {
   if (unit === 'pcs') return 1;
+  if (unit === 'cup') return 1;
+  // Base stock is stored in the selected unit.
+  // For volume: 1 L = 1000 ml.
+  // For weight: 1 kg = 1000 g.
   if (unit === 'liter') return 1;
   return 1000;
+};
+
+const normalizePackSize = (value, unit) => {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric) || numeric <= 0) {
+    return getDefaultPackSize(unit);
+  }
+  return numeric;
+};
+
+const formatUnitValue = (value, unit) => {
+  const numeric = Number(value || 0);
+  if (unit === 'liter' || unit === 'ml' || unit === 'g' || unit === 'pcs' || unit === 'cup') {
+    return numeric.toLocaleString('id-ID', {
+      maximumFractionDigits: 3
+    });
+  }
+  return numeric.toLocaleString('id-ID');
 };
 
 const getDefaultPackUnitName = (unit) => {
@@ -91,6 +113,35 @@ export const InventoryManager = ({ inventory = [], setInventory }) => {
     }));
   };
 
+  const handleNumericChange = (field, rawValue, fallback = 0) => {
+    const cleaned = String(rawValue ?? '');
+
+    // Let the user temporarily clear the field instead of forcing "0"
+    // back into it while typing.
+    if (cleaned === '') {
+      setFormData((prev) => ({ ...prev, [field]: '' }));
+      return;
+    }
+
+    const numeric = field === 'costPerUnit'
+      ? parseFloat(cleaned)
+      : parseFloat(cleaned);
+
+    setFormData((prev) => ({
+      ...prev,
+      [field]: Number.isFinite(numeric) ? numeric : fallback
+    }));
+  };
+
+  const selectZeroOnFocus = (event) => {
+    const input = event.currentTarget;
+    if (String(input.value) === '0') {
+      requestAnimationFrame(() => {
+        try { input.select(); } catch {}
+      });
+    }
+  };
+
   const handleOpenRestock = (item) => {
     sounds.playBeep();
     setRestockItem(item);
@@ -103,9 +154,10 @@ export const InventoryManager = ({ inventory = [], setInventory }) => {
     const packSize =
       Number(restockItem.packSize) || getDefaultPackSize(restockItem.unit);
 
-    const addedAmount = Number(restockPacksQty) * packSize;
+    const packages = Number(restockPacksQty);
+    const addedAmount = packages * packSize;
 
-    if (addedAmount <= 0) {
+    if (!Number.isFinite(packages) || packages <= 0 || addedAmount <= 0) {
       return alert('Jumlah pembelian harus lebih dari 0!');
     }
 
@@ -135,9 +187,9 @@ export const InventoryManager = ({ inventory = [], setInventory }) => {
     const normalized = {
       ...formData,
       name: formData.name.trim(),
-      stock: Number(formData.stock) || 0,
-      minStock: Number(formData.minStock) || 0,
-      packSize: Number(formData.packSize) || getDefaultPackSize(formData.unit),
+      stock: Number.isFinite(Number(formData.stock)) ? Number(formData.stock) : 0,
+      minStock: Number.isFinite(Number(formData.minStock)) ? Number(formData.minStock) : 0,
+      packSize: normalizePackSize(formData.packSize, formData.unit),
       costPerUnit: Number(formData.costPerUnit) || 0,
       unit: formData.unit || 'ml',
       packUnitName: formData.packUnitName?.trim() || getDefaultPackUnitName(formData.unit)
@@ -421,11 +473,11 @@ export const InventoryManager = ({ inventory = [], setInventory }) => {
                       textAlign: 'center'
                     }}
                     value={restockPacksQty}
-                    onChange={(event) =>
-                      setRestockPacksQty(
-                        Math.max(1, parseInt(event.target.value) || 1)
-                      )
-                    }
+                    onFocus={selectZeroOnFocus}
+                    onChange={(event) => {
+                      const raw = event.target.value;
+                      setRestockPacksQty(raw === '' ? '' : Math.max(0, parseInt(raw, 10) || 0));
+                    }}
                   />
 
                   <span
@@ -474,10 +526,11 @@ export const InventoryManager = ({ inventory = [], setInventory }) => {
                         marginBottom: '6px'
                       }}
                     >
-                      <span>Pertambahan Volume:</span>
+                      <span>
+                        Pertambahan Stok ({Number(restockPacksQty || 0).toLocaleString('id-ID')} {packUnitName}):
+                      </span>
                       <strong style={{ color: 'var(--apple-green)' }}>
-                        + {addedVolume.toLocaleString('id-ID')}{' '}
-                        {restockItem.unit}
+                        + {addedVolume.toLocaleString('id-ID')} {restockItem.unit}
                       </strong>
                     </div>
 
@@ -633,11 +686,9 @@ export const InventoryManager = ({ inventory = [], setInventory }) => {
                     type="number"
                     className="apple-input"
                     value={formData.stock}
+                    onFocus={selectZeroOnFocus}
                     onChange={(event) =>
-                      setFormData({
-                        ...formData,
-                        stock: parseFloat(event.target.value) || 0
-                      })
+                      handleNumericChange('stock', event.target.value, 0)
                     }
                   />
                 </div>
@@ -687,19 +738,16 @@ export const InventoryManager = ({ inventory = [], setInventory }) => {
                       marginBottom: '6px'
                     }}
                   >
-                    Jumlah Volume Per Kemasan
+                    Isi 1 Kemasan
                   </label>
 
                   <input
                     type="number"
                     className="apple-input"
                     value={formData.packSize}
+                    onFocus={selectZeroOnFocus}
                     onChange={(event) =>
-                      setFormData({
-                        ...formData,
-                        packSize:
-                          parseFloat(event.target.value) || 1
-                      })
+                      handleNumericChange('packSize', event.target.value, 1)
                     }
                     placeholder={
                       formData.unit === 'liter'
@@ -760,12 +808,9 @@ export const InventoryManager = ({ inventory = [], setInventory }) => {
                     type="number"
                     className="apple-input"
                     value={formData.minStock}
+                    onFocus={selectZeroOnFocus}
                     onChange={(event) =>
-                      setFormData({
-                        ...formData,
-                        minStock:
-                          parseFloat(event.target.value) || 0
-                      })
+                      handleNumericChange('minStock', event.target.value, 0)
                     }
                   />
                 </div>
@@ -786,12 +831,9 @@ export const InventoryManager = ({ inventory = [], setInventory }) => {
                     type="number"
                     className="apple-input"
                     value={formData.costPerUnit}
+                    onFocus={selectZeroOnFocus}
                     onChange={(event) =>
-                      setFormData({
-                        ...formData,
-                        costPerUnit:
-                          parseFloat(event.target.value) || 0
-                      })
+                      handleNumericChange('costPerUnit', event.target.value, 0)
                     }
                   />
                 </div>
