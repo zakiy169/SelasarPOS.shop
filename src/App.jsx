@@ -1000,7 +1000,14 @@ export function App() {
       suppressCloudWriteRef.current = false;
       return undefined;
     }
-    const timeout = setTimeout(() => {
+      const timeout = setTimeout(() => {
+        console.log('CLOUD SAVE:', {
+          products: products.length,
+          transactions: transactions.length,
+          time: new Date().toISOString(),
+        });
+
+        
       queueCloudSave({
         organization_id: activeOrganizationId,
         products,
