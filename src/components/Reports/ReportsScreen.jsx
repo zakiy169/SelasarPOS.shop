@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import {
-  ArrowDownRight, ArrowUpRight, BarChart3, CalendarDays, ChevronRight,
+  ArrowDownRight, ArrowUpRight, BarChart3, CalendarDays, ChevronDown, ChevronRight,
   Download, Landmark, Package, Plus, Printer,
   Search, ShoppingBag, Trash2, Users, WalletCards, X,
 } from 'lucide-react';
@@ -49,10 +49,17 @@ export const ReportsScreen = ({
   const [period, setPeriod] = useState('daily');
   const [selectedDate, setSelectedDate] = useState(() => new Date().toLocaleDateString('en-CA'));
   const [search, setSearch] = useState('');
+  const [showReportPicker, setShowReportPicker] = useState(false);
   const [receipt, setReceipt] = useState(null);
   const [showExpenseForm, setShowExpenseForm] = useState(false);
   const [expenseForm, setExpenseForm] = useState({ title: '', amount: '', category: 'Operasional', paymentMethod: 'cash', date: new Date().toLocaleDateString('en-CA'), note: '' });
   const anchor = useMemo(() => new Date(`${selectedDate}T12:00:00`), [selectedDate]);
+  const activeReport = REPORTS.find(item => item.id === reportId) || REPORTS[0];
+  const ActiveReportIcon = activeReport.icon;
+  const selectReport = (id) => {
+    setReportId(id);
+    setShowReportPicker(false);
+  };
 
   const data = useMemo(() => {
     const validTransactions = transactions.filter(tx => !isVoid(tx));
@@ -144,7 +151,21 @@ export const ReportsScreen = ({
 
   return <div className="report-hub">
     <header className="report-hub-header"><div><p className="report-eyebrow">Pusat kontrol usaha</p><h2>Laporan yang jelas, dari data kasir yang sama</h2><span>Setiap angka berasal dari transaksi, stok, shift, member, dan pengeluaran aplikasi ini.</span></div><button className="report-primary-action" onClick={() => openExpenseForm()}><Plus size={17} /> Tambah pengeluaran</button></header>
-    <nav className="report-hub-nav" aria-label="Jenis laporan">{REPORTS.map(item => { const Icon = item.icon; return <button key={item.id} className={reportId === item.id ? 'active' : ''} onClick={() => setReportId(item.id)}><Icon size={18} /><span><b>{item.label}</b><small>{item.description}</small></span><ChevronRight size={15} /></button>; })}</nav>
+    <nav className="report-hub-nav" aria-label="Jenis laporan">{REPORTS.map(item => { const Icon = item.icon; return <button key={item.id} className={reportId === item.id ? 'active' : ''} onClick={() => selectReport(item.id)}><Icon size={18} /><span><b>{item.label}</b><small>{item.description}</small></span><ChevronRight size={15} /></button>; })}</nav>
+    <div className="report-mobile-switcher-wrap">
+      <button type="button" className="report-mobile-switcher" onClick={() => setShowReportPicker(true)} aria-haspopup="dialog" aria-expanded={showReportPicker}>
+          <span className="report-mobile-switcher-icon"><ActiveReportIcon size={18} /></span>
+        <span><small>LAPORAN AKTIF</small><b>{activeReport.label}</b></span>
+        <ChevronDown size={18} />
+      </button>
+    </div>
+    {showReportPicker && <div className="report-picker-overlay" role="presentation" onMouseDown={event => event.target === event.currentTarget && setShowReportPicker(false)}>
+      <section className="report-picker-sheet" role="dialog" aria-modal="true" aria-label="Pilih jenis laporan">
+        <div className="report-picker-handle" />
+        <header className="report-picker-heading"><div><small>JENIS LAPORAN</small><h2>Pilih tampilan</h2><p>Pindah laporan tanpa kembali ke bagian atas.</p></div><button type="button" onClick={() => setShowReportPicker(false)} aria-label="Tutup pilihan laporan">×</button></header>
+        <div className="report-picker-options">{REPORTS.map(item => { const Icon = item.icon; return <button type="button" key={item.id} className={`report-picker-option ${reportId === item.id ? 'is-active' : ''}`} onClick={() => selectReport(item.id)}><span><Icon size={18} /></span><div><b>{item.label}</b><small>{item.description}</small></div><ChevronRight size={17} /></button>; })}</div>
+      </section>
+    </div>}
     <section className="report-filter-bar"><div className="report-period-tabs">{PERIODS.map(item => <button key={item.id} className={period === item.id ? 'active' : ''} onClick={() => setPeriod(item.id)}>{item.label}</button>)}</div><label><CalendarDays size={16} /><input type="date" value={selectedDate} onChange={event => setSelectedDate(event.target.value)} /></label><div><button onClick={exportCsv}><Download size={16} /> Export CSV</button><button onClick={() => window.print()}><Printer size={16} /> Cetak</button></div></section>
     {reportId === 'sales' && <SalesReport data={data} filteredTransactions={filteredTransactions} search={search} setSearch={setSearch} setReceipt={setReceipt} currentUserRole={currentUserRole} onVoidTransaction={onVoidTransaction} maxSale={maxSale} />}
     {reportId === 'products' && <ProductsReport rows={data.productRows} missingHppCount={data.missingHppCount} />}

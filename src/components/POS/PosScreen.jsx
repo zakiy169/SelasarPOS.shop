@@ -17,6 +17,7 @@ import { formatRupiah } from '../../utils/formatters';
 import { ProductModal } from './ProductModal';
 import { PaymentModal } from './PaymentModal';
 import { ReceiptModal } from './ReceiptModal';
+import { TransactionSuccessScreen } from './TransactionSuccessScreen';
 import { sounds } from '../../utils/audio';
 import { bluetoothPrinter } from '../../utils/bluetoothPrinter';
 import { ProductImage } from '../ProductImage';
@@ -63,6 +64,7 @@ export const PosScreen = ({
   const [selectedProductForModal, setSelectedProductForModal] = useState(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [completedTransaction, setCompletedTransaction] = useState(null);
+  const [successTransaction, setSuccessTransaction] = useState(null);
 
   const availableTables = tables.filter(table => table.status === 'available');
 
@@ -87,10 +89,10 @@ export const PosScreen = ({
   }, [mobileCartOpen]);
 
   useEffect(() => {
-    const hasPosModal = Boolean(selectedProductForModal || showPaymentModal || completedTransaction);
+    const hasPosModal = Boolean(selectedProductForModal || showPaymentModal || completedTransaction || successTransaction);
     document.body.classList.toggle('pos-modal-open', hasPosModal);
     return () => document.body.classList.remove('pos-modal-open');
-  }, [selectedProductForModal, showPaymentModal, completedTransaction]);
+  }, [selectedProductForModal, showPaymentModal, completedTransaction, successTransaction]);
 
   // Filter products by category & search
   const filteredProducts = products.filter(p => {
@@ -102,6 +104,7 @@ export const PosScreen = ({
   const handleOpenProductModal = (product) => {
     if (!product.isAvailable) return;
     sounds.playBeep();
+    setMobileCartOpen(false);
     setSelectedProductForModal(product);
   };
 
@@ -195,6 +198,7 @@ export const PosScreen = ({
       return;
     }
     sounds.playBeep();
+    setMobileCartOpen(false);
     setShowPaymentModal(true);
   };
 
@@ -243,7 +247,7 @@ export const PosScreen = ({
     setShowPaymentModal(false);
     setCartItems([]);
     setAppliedVoucher(null);
-    setCompletedTransaction(newTx);
+    setSuccessTransaction(newTx);
     setMobileCartOpen(false);
   };
 
@@ -575,6 +579,16 @@ export const PosScreen = ({
           appSettings={appSettings}
           onClose={() => setCompletedTransaction(null)}
           onOpenBluetoothModal={onOpenBluetoothModal}
+        />
+      )}
+
+      {successTransaction && (
+        <TransactionSuccessScreen
+          transaction={successTransaction}
+          onContinue={() => {
+            setCompletedTransaction(successTransaction);
+            setSuccessTransaction(null);
+          }}
         />
       )}
     </div>

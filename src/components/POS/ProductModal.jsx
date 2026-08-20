@@ -68,8 +68,8 @@ export const ProductModal = ({ product, onClose, onAddToCart, addons = [] }) => 
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-card" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '480px' }}>
+    <div className="modal-overlay product-config-overlay" onClick={onClose}>
+      <div className="modal-card product-config-modal" onClick={(e) => e.stopPropagation()}>
         {/* ── Header ── */}
         <div className="modal-header">
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>

@@ -61,8 +61,8 @@ export const PaymentModal = ({ grandTotal, cartItems, customerType, tableName, q
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-card" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '560px' }}>
+    <div className="modal-overlay payment-overlay" onClick={onClose}>
+      <div className="modal-card payment-modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <div>
             <h3 style={{ fontSize: '18px', fontWeight: '800' }}>Pembayaran Transaksi</h3>
@@ -77,7 +77,7 @@ export const PaymentModal = ({ grandTotal, cartItems, customerType, tableName, q
 
         <div className="modal-body">
           {/* Total Amount Header */}
-          <div style={{
+          <div className="payment-total-panel" style={{
             background: 'linear-gradient(135deg, rgba(0, 71, 173, 0.12) 0%, rgba(229, 35, 32, 0.08) 100%)',
             border: '1px solid var(--selasar-blue)',
             borderRadius: '16px',
@@ -132,7 +132,7 @@ export const PaymentModal = ({ grandTotal, cartItems, customerType, tableName, q
 
           {/* Dynamic Payment Method View */}
           {paymentMethod === 'qris' && (
-            <div style={{
+            <div className="payment-qris-panel" style={{
               background: 'var(--bg-card)',
               borderRadius: '16px',
               padding: '20px',

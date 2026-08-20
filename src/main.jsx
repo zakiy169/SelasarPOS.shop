@@ -1,9 +1,7 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App.jsx'
-import './styles/main.css'
-import './styles/mobile-fixes.css'
-import './styles/concept-ui.css'
+import './styles/selasar-ui.css'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>

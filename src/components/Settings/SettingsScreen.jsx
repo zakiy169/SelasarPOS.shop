@@ -66,36 +66,32 @@ export const SettingsScreen = ({ appSettings, setAppSettings, addons, setAddons,
   };
 
   return (
-    <div className="settings-page" style={{ padding: '24px', maxWidth: '840px', margin: '0 auto', overflowY: 'auto', height: '100%', width: '100%' }}>
+    <div className="settings-page">
       {/* Page Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '28px' }}>
+      <header className="settings-hero">
         <div>
-          <h2 style={{ fontSize: '24px', fontWeight: '800' }}>Pengaturan Aplikasi</h2>
-          <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '4px' }}>Tampilan, printer, QRIS, add-on &amp; biaya</p>
+          <p className="settings-kicker">SISTEM KEDAI</p>
+          <h2>Pengaturan aplikasi</h2>
+          <p>Tampilan, printer, QRIS, add-on, biaya, dan akses usaha dalam satu ruang kerja.</p>
         </div>
         <button
           onClick={saveSettings}
-          style={{
-            background: saved ? 'var(--apple-green)' : 'var(--apple-blue)',
-            color: '#FFF', border: 'none', padding: '10px 22px', borderRadius: '12px',
-            fontSize: '14px', fontWeight: '700', cursor: 'pointer', transition: 'all 0.3s',
-            display: 'flex', alignItems: 'center', gap: '8px'
-          }}
+          className={`settings-save-button ${saved ? 'is-saved' : ''}`}
         >
           {saved ? <><CheckCircle2 size={18} /> Tersimpan!</> : 'Simpan Pengaturan'}
         </button>
-      </div>
+      </header>
 
       <nav className="settings-section-nav" aria-label="Kategori pengaturan">
         {[['tampilan', 'Tampilan & akun'], ['operasional', 'Operasional'], ['pembayaran', 'Pembayaran & perangkat'], ['sistem', 'Sistem']].map(([id, label]) => <button key={id} type="button" className={activeSection === id ? 'active' : ''} onClick={() => setActiveSection(id)}>{label}</button>)}
         <button type="button" onClick={onOpenReceiptSettings}>Editor struk</button>
       </nav>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+      <div className="settings-stack">
         {activeSection === 'tampilan' && <>
 
         {/* ── Appearance: Theme ── */}
-        <div style={{ background: 'var(--bg-card)', padding: '20px', borderRadius: 'var(--radius-xl)', border: '1px solid var(--border-color)', boxShadow: 'var(--glass-shadow)' }}>
-          <h3 style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px', fontSize: '16px', fontWeight: '700' }}>
+        <section className="settings-surface">
+          <h3 className="settings-surface-title">
             <Palette size={20} color="var(--apple-blue)" /> Tema Tampilan
           </h3>
           <div className="settings-theme-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px' }}>
@@ -130,7 +126,7 @@ export const SettingsScreen = ({ appSettings, setAppSettings, addons, setAddons,
               </button>
             ))}
           </div>
-        </div>
+        </section>
 
         <div className="settings-account-card">
           <div className="settings-card-heading"><UserRound size={20} /> Profil Usaha &amp; Akses</div>
@@ -149,11 +145,11 @@ export const SettingsScreen = ({ appSettings, setAppSettings, addons, setAddons,
         </div>
 
         {/* ── Appearance: Font ── */}
-        <div style={{ background: 'var(--bg-card)', padding: '20px', borderRadius: 'var(--radius-xl)', border: '1px solid var(--border-color)', boxShadow: 'var(--glass-shadow)' }}>
-          <h3 style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px', fontSize: '16px', fontWeight: '700' }}>
+        <section className="settings-surface">
+          <h3 className="settings-surface-title">
             <Type size={20} color="var(--apple-blue)" /> Pilihan Font / Tipografi
           </h3>
-          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+          <div className="settings-font-grid">
             {FONTS.map(f => (
               <button
                 key={f.id}
@@ -177,7 +173,7 @@ export const SettingsScreen = ({ appSettings, setAppSettings, addons, setAddons,
               </button>
             ))}
           </div>
-        </div>
+        </section>
 
         {/* ── Add-ons Manager ── */}
         </>}
@@ -199,7 +195,7 @@ export const SettingsScreen = ({ appSettings, setAppSettings, addons, setAddons,
         {/* ── Printer ── */}
         </>}
         {activeSection === 'pembayaran' && <>
-        <div style={{ background: 'var(--bg-card)', padding: '20px', borderRadius: 'var(--radius-xl)', border: '1px solid var(--border-color)', boxShadow: 'var(--glass-shadow)' }}>
+        <section className="settings-surface">
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
             <h3 style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '16px', fontWeight: '700' }}>
               <Printer size={20} color="var(--apple-blue)" /> Koneksi Thermal Printer Kasir
@@ -228,11 +224,11 @@ export const SettingsScreen = ({ appSettings, setAppSettings, addons, setAddons,
               </select>
             </div>
           </div>
-        </div>
+        </section>
 
         {/* ── QRIS ── */}
-        <div style={{ background: 'var(--bg-card)', padding: '20px', borderRadius: 'var(--radius-xl)', border: '1px solid var(--border-color)', boxShadow: 'var(--glass-shadow)' }}>
-          <h3 style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px', fontSize: '16px', fontWeight: '700' }}>
+        <section className="settings-surface">
+          <h3 className="settings-surface-title">
             <QrCode size={20} color="var(--apple-blue)" /> Barcode QRIS &amp; E-Wallet Toko
           </h3>
           <div style={{ display: 'flex', gap: '24px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
@@ -254,11 +250,11 @@ export const SettingsScreen = ({ appSettings, setAppSettings, addons, setAddons,
               </div>
             )}
           </div>
-        </div>
+        </section>
 
         {/* ── Tax & Service Charge ── */}
-        <div style={{ background: 'var(--bg-card)', padding: '20px', borderRadius: 'var(--radius-xl)', border: '1px solid var(--border-color)', boxShadow: 'var(--glass-shadow)' }}>
-          <h3 style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px', fontSize: '16px', fontWeight: '700' }}>
+        <section className="settings-surface">
+          <h3 className="settings-surface-title">
             <Percent size={20} color="var(--apple-blue)" /> Biaya Operasional (Tax &amp; Service Charge)
           </h3>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
@@ -271,7 +267,7 @@ export const SettingsScreen = ({ appSettings, setAppSettings, addons, setAddons,
               <input type="number" min="0" max="100" step="0.1" className="apple-input" value={appSettings.serviceChargePercent ?? 0} onChange={e => handleChange('serviceChargePercent', e.target.value)} onBlur={e => handleChange('serviceChargePercent', Math.max(0, Math.min(100, Number(e.target.value) || 0)))} />
             </div>
           </div>
-        </div>
+        </section>
 
         </>}
         {activeSection === 'sistem' && <>

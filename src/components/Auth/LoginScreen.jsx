@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { AlertCircle, ArrowRight, BarChart3, CheckCircle2, ChefHat, Cloud, Coffee, LayoutGrid, ReceiptText, ShieldCheck, Sparkles, Users } from 'lucide-react';
+import { AlertCircle, ArrowRight, CheckCircle2, Cloud, Coffee, ShieldCheck, Sparkles, TrendingUp } from 'lucide-react';
 import { SelasarLogo } from '../SelasarLogo';
 import { sounds } from '../../utils/audio';
 
@@ -22,62 +22,54 @@ export const LoginScreen = ({ onGoogleLogin }) => {
     }
   };
 
-  return <div className="login-screen concept-login">
-    <div className="concept-auth-bg" aria-hidden="true"><i /><i /><i /><i /></div>
-    <header className="concept-login-header">
-      <SelasarLogo size="md" variant="light" />
-      <span><i /> Sistem siap digunakan</span>
-    </header>
+  return (
+    <div className="login-screen selasar-login">
+      <div className="login-atmosphere" aria-hidden="true"><i /><i /><i /></div>
+      <header className="selasar-login-topbar">
+        <SelasarLogo size="md" variant="light" />
+        <span className="login-ready-status"><i /> Sistem operasional siap</span>
+      </header>
 
-    <main className="concept-login-main">
-      <section className="concept-login-hero">
-        <div className="concept-login-copy">
-          <span className="concept-eyebrow"><Sparkles size={14} /> POS yang terasa ringan</span>
-          <h1>Kelola kedai dalam satu ruang kerja yang <em>lebih tenang.</em></h1>
-          <p>Kasir, meja, dapur, stok, member, shift, dan laporan disusun untuk kerja harian yang cepat tanpa tampilan yang ramai.</p>
-          <div className="concept-benefits">
-            <span><CheckCircle2 size={15} /> Semua fitur dalam satu akun</span>
-            <span><CheckCircle2 size={15} /> Sinkron antar perangkat</span>
-            <span><CheckCircle2 size={15} /> Akses Owner dan Kasir</span>
+      <main className="selasar-login-main">
+        <section className="selasar-login-stage">
+          <div className="selasar-login-copy">
+            <span className="login-kicker"><Sparkles size={14} /> SELASAR WORKSPACE</span>
+            <h1>Kerja kedai yang <em>lebih mengalir.</em></h1>
+            <p>Satu ruang kerja untuk menerima pesanan, menjaga dapur tetap sinkron, dan menutup hari dengan angka yang jelas.</p>
+            <div className="login-proof-points">
+              <span><CheckCircle2 size={15} /> Kasir dan pesanan cepat</span>
+              <span><Cloud size={15} /> Data tersinkron aman</span>
+            </div>
+            {error && <div className="login-error"><AlertCircle size={15} /> {error}</div>}
+            <button type="button" className="selasar-google-button" onClick={handleGoogleLogin} disabled={isLoading}>
+              <GoogleMark /><span>{isLoading ? 'Menghubungkan akun...' : 'Lanjut dengan Google'}</span><ArrowRight size={18} />
+            </button>
+            <p className="selasar-login-security"><ShieldCheck size={14} /> Berikutnya, pilih akses Owner atau Kasir dengan PIN.</p>
           </div>
-          {error && <div className="login-error"><AlertCircle size={15} /> {error}</div>}
-          <button type="button" className="concept-google-button" onClick={handleGoogleLogin} disabled={isLoading}>
-            <GoogleMark /><span>{isLoading ? 'Menghubungkan akun...' : 'Mulai dengan Google'}</span><ArrowRight size={18} />
-          </button>
-          <p className="concept-login-security"><ShieldCheck size={14} /> Login dilanjutkan dengan verifikasi PIN Owner atau Kasir.</p>
-        </div>
 
-        <div className="concept-app-preview" aria-label="Pratinjau Selasar POS">
-          <article className="preview-phone preview-phone-left">
-            <div className="preview-top"><Coffee size={17} /><span>Kasir</span><i /></div>
-            <strong>Selamat datang!</strong><small>Siap menerima pesanan hari ini.</small>
-            <div className="preview-search">Cari menu...</div>
-            <div className="preview-product-grid"><span>Latte<b>Rp 18k</b></span><span>V60<b>Rp 15k</b></span><span>Risol<b>Rp 6k</b></span><span>Tea<b>Rp 8k</b></span></div>
-            <div className="preview-nav"><Coffee /><ChefHat /><LayoutGrid /><Users /></div>
-          </article>
-          <article className="preview-phone preview-phone-center">
-            <div className="preview-top"><BarChart3 size={17} /><span>Laporan</span><i /></div>
-            <strong>Ringkasan usaha</strong><small>Hari ini, 20 transaksi</small>
-            <div className="preview-kpi"><small>Omzet</small><b>Rp 1.240.000</b><span>+12,8%</span></div>
-            <div className="preview-chart"><i /><i /><i /><i /><i /><i /></div>
-            <div className="preview-row"><span>Arus kas</span><b>Rp 940k</b></div><div className="preview-row"><span>Pengeluaran</span><b>Rp 300k</b></div>
-          </article>
-          <article className="preview-phone preview-phone-right">
-            <div className="preview-top"><ReceiptText size={17} /><span>Pesanan</span><i /></div>
-            <strong>Pesanan baru</strong><small>Meja 06 • Dine-in</small>
-            <div className="preview-order"><span>2× Vanilla Latte</span><b>Rp 36k</b></div><div className="preview-order"><span>1× Risol Mayo</span><b>Rp 6k</b></div>
-            <div className="preview-total"><span>Total</span><b>Rp 42.000</b></div>
-            <button type="button" tabIndex="-1">Proses pembayaran</button>
-          </article>
-        </div>
-      </section>
+          <div className="login-showcase" aria-label="Pratinjau Selasar POS">
+            <span className="login-showcase-label label-one"><Coffee size={14} /> Kasir terhubung</span>
+            <span className="login-showcase-label label-two"><TrendingUp size={14} /> +12,8% hari ini</span>
+            <article className="login-order-card">
+              <div className="login-card-top"><span className="login-card-mark"><Coffee size={18} /></span><div><small>KEDAI KOPI SELASAR</small><b>Pesanan berjalan</b></div><i /></div>
+              <div className="login-card-heading"><div><span>MEJA 06 · DINE-IN</span><h2>Pesanan hari ini.</h2></div><strong>02</strong></div>
+              <div className="login-order-list">
+                <div><span className="login-order-icon">VL</span><p><b>Vanilla Latte</b><small>Es · Oat milk</small></p><strong>Rp18k</strong></div>
+                <div><span className="login-order-icon warm">RM</span><p><b>Risol Mayo</b><small>Hangat · 1 porsi</small></p><strong>Rp6k</strong></div>
+              </div>
+              <div className="login-card-total"><span>Total sementara</span><b>Rp24.000</b></div>
+              <div className="login-card-action"><span>Siap diproses</span><ArrowRight size={17} /></div>
+            </article>
+            <div className="login-sales-chip"><span>OMZET HARI INI</span><b>Rp 1.240.000</b><small><TrendingUp size={12} /> 20 transaksi</small></div>
+          </div>
+        </section>
 
-      <section className="concept-feature-strip" aria-label="Fitur utama">
-        <article><Coffee size={18} /><div><strong>Kasir cepat</strong><span>Pesanan sampai struk</span></div></article>
-        <article><ChefHat size={18} /><div><strong>Dapur sinkron</strong><span>Status pesanan langsung</span></div></article>
-        <article><Cloud size={18} /><div><strong>Cloud aman</strong><span>Data per organisasi</span></div></article>
-        <article><BarChart3 size={18} /><div><strong>Laporan lengkap</strong><span>Omzet, laba, dan arus kas</span></div></article>
-      </section>
-    </main>
-  </div>;
+        <section className="selasar-login-footer" aria-label="Keunggulan Selasar">
+          <span><Coffee size={16} /> Kasir yang cepat</span>
+          <span><Cloud size={16} /> Cloud per organisasi</span>
+          <span><ShieldCheck size={16} /> Akses berbasis peran</span>
+        </section>
+      </main>
+    </div>
+  );
 };
