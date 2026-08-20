@@ -21,11 +21,12 @@ const FONTS = [
   { id: 'inter',    label: 'Inter',              desc: 'Clean & neutral, perfect readability' },
 ];
 
-export const SettingsScreen = ({ appSettings, setAppSettings, addons, setAddons, theme, setTheme, onOpenBluetoothModal, activeShift, onOpenShift, onUpdateShift, onCloseShift, products, onToggleProductAvailability, onResetOrganizationData, authenticatedUser, activeOrganizationId }) => {
+export const SettingsScreen = ({ appSettings, setAppSettings, addons, setAddons, theme, setTheme, onOpenBluetoothModal, onOpenReceiptSettings, activeShift, onOpenShift, onUpdateShift, onCloseShift, products, onToggleProductAvailability, onResetOrganizationData, authenticatedUser, activeOrganizationId }) => {
   const fileInputRef = useRef(null);
   const [btDeviceName, setBtDeviceName] = useState(bluetoothPrinter.deviceName || '');
   const [btConnected, setBtConnected] = useState(bluetoothPrinter.isConnected);
   const [saved, setSaved] = useState(false);
+  const [activeSection, setActiveSection] = useState('tampilan');
 
   useEffect(() => {
     const syncBt = () => {
@@ -85,7 +86,12 @@ export const SettingsScreen = ({ appSettings, setAppSettings, addons, setAddons,
         </button>
       </div>
 
+      <nav className="settings-section-nav" aria-label="Kategori pengaturan">
+        {[['tampilan', 'Tampilan & akun'], ['operasional', 'Operasional'], ['pembayaran', 'Pembayaran & perangkat'], ['sistem', 'Sistem']].map(([id, label]) => <button key={id} type="button" className={activeSection === id ? 'active' : ''} onClick={() => setActiveSection(id)}>{label}</button>)}
+        <button type="button" onClick={onOpenReceiptSettings}>Editor struk</button>
+      </nav>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        {activeSection === 'tampilan' && <>
 
         {/* ── Appearance: Theme ── */}
         <div style={{ background: 'var(--bg-card)', padding: '20px', borderRadius: 'var(--radius-xl)', border: '1px solid var(--border-color)', boxShadow: 'var(--glass-shadow)' }}>
@@ -174,6 +180,8 @@ export const SettingsScreen = ({ appSettings, setAppSettings, addons, setAddons,
         </div>
 
         {/* ── Add-ons Manager ── */}
+        </>}
+        {activeSection === 'operasional' && <>
         <AddonsManager addons={addons} setAddons={setAddons} />
 
         <div className="settings-subsection">
@@ -189,6 +197,8 @@ export const SettingsScreen = ({ appSettings, setAppSettings, addons, setAddons,
         </div>
 
         {/* ── Printer ── */}
+        </>}
+        {activeSection === 'pembayaran' && <>
         <div style={{ background: 'var(--bg-card)', padding: '20px', borderRadius: 'var(--radius-xl)', border: '1px solid var(--border-color)', boxShadow: 'var(--glass-shadow)' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
             <h3 style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '16px', fontWeight: '700' }}>
@@ -263,6 +273,8 @@ export const SettingsScreen = ({ appSettings, setAppSettings, addons, setAddons,
           </div>
         </div>
 
+        </>}
+        {activeSection === 'sistem' && <>
         <div className="app-info-card">
           <div className="app-info-icon"><Info size={20} /></div>
           <div>
@@ -282,7 +294,7 @@ export const SettingsScreen = ({ appSettings, setAppSettings, addons, setAddons,
           </div>
           <button type="button" onClick={resetOrganizationData}><Trash2 size={15} /> Reset Semua Data</button>
         </div>
-
+        </>}
       </div>
 
     </div>

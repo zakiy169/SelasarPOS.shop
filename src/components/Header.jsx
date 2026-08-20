@@ -13,7 +13,6 @@ import {
   User,
   Palette,
   Bluetooth,
-  Printer,
   Menu,
   X,
   Cloud
@@ -77,7 +76,6 @@ export const Header = ({
     { id: 'inventory', label: 'Stok', icon: Package, group: 'Operasional', ownerOnly: true },
     { id: 'loyalty', label: 'Member', icon: Users, group: 'Pelanggan & data', ownerOnly: false },
     { id: 'reports', label: 'Laporan', icon: BarChart3, group: 'Keuangan', ownerOnly: true },
-    { id: 'receipt_settings', label: 'Struk', icon: Printer, group: 'Perangkat & sistem', ownerOnly: true },
     { id: 'settings', label: 'Pengaturan', icon: Settings, group: 'Perangkat & sistem', ownerOnly: true }
   ];
 
@@ -91,7 +89,8 @@ export const Header = ({
   const primaryMobileTabs = primaryIds.map(id => visibleTabs.find(tab => tab.id === id)).filter(Boolean);
   const secondaryActiveTab = visibleTabs.find(tab => !primaryMobileTabs.some(primary => primary.id === tab.id) && tab.id === activeTab);
   const moreIsActive = mobileNavOpen || Boolean(secondaryActiveTab);
-  const activeTabInfo = visibleTabs.find(tab => tab.id === activeTab) || visibleTabs[0];
+  const activeTabInfo = visibleTabs.find(tab => tab.id === activeTab)
+    || (activeTab === 'receipt_settings' ? { group: 'Perangkat & sistem', label: 'Editor struk' } : visibleTabs[0]);
 
   return (
     <>

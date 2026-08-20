@@ -9,32 +9,56 @@ export const BluetoothModal = ({ onClose, onConnected }) => {
   const [scanError, setScanError] = useState('');
   const [scanPhase, setScanPhase] = useState('idle');
 
-  const handleScan = async () => {
+  const completeConnection = (result) => {
+    sounds.playSuccessChime();
+    setDeviceName(result.deviceName);
+    setScanPhase('connected');
+    onConnected?.(result.deviceName);
+    setTimeout(() => onClose(), 1200);
+  };
+
+  const handleBleScan = async () => {
     setLoading(true);
-    setScanPhase('scanning');
+    setScanPhase('scanning-ble');
     setScanError('');
     sounds.playBeep();
 
-    if (bluetoothPrinter.isSupported()) {
-      try {
-        const result = await bluetoothPrinter.scanAndConnect();
-        if (result.success) {
-          sounds.playSuccessChime();
-          setDeviceName(result.deviceName);
-          setScanPhase('connected');
-          onConnected?.(result.deviceName);
-          setLoading(false);
-          setTimeout(() => onClose(), 1200);
-          return;
-        }
-      } catch (scanFailure) {
-        console.info('[BT] Native scan ended:', scanFailure.name);
+    try {
+      if (!bluetoothPrinter.isSupported()) {
+        throw new Error('Pencarian perangkat Bluetooth tidak didukung di browser ini. Gunakan Chrome atau Edge desktop melalui HTTPS/localhost.');
       }
+      completeConnection(await bluetoothPrinter.scanAndConnect());
+    } catch (scanFailure) {
+      console.info('[BT] BLE connection ended:', scanFailure?.name || scanFailure);
+      setScanPhase('idle');
+      setScanError(scanFailure?.name === 'NotFoundError'
+        ? 'Pemilihan perangkat dibatalkan.'
+        : scanFailure?.message || 'Tidak dapat membuka pencarian Bluetooth.');
+    } finally {
+      setLoading(false);
     }
+  };
 
-    setScanPhase('idle');
-    setLoading(false);
-    setScanError('Tidak ada printer Bluetooth yang terhubung. Nyalakan printer dan Bluetooth perangkat, lalu coba pindai kembali.');
+  const handleSerialScan = async () => {
+    setLoading(true);
+    setScanPhase('scanning-serial');
+    setScanError('');
+    sounds.playBeep();
+
+    try {
+      if (!bluetoothPrinter.isSerialSupported()) {
+        throw new Error('Pemilih port COM tidak didukung di browser ini. Gunakan Chrome atau Edge desktop.');
+      }
+      completeConnection(await bluetoothPrinter.scanAndConnectSerial());
+    } catch (scanFailure) {
+      console.info('[BT] Serial connection ended:', scanFailure?.name || scanFailure);
+      setScanPhase('idle');
+      setScanError(scanFailure?.name === 'NotFoundError'
+        ? 'Pemilihan port dibatalkan.'
+        : scanFailure?.message || 'Tidak dapat membuka pemilih port printer.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const testPrint = async () => {
@@ -57,6 +81,8 @@ export const BluetoothModal = ({ onClose, onConnected }) => {
   };
 
   const connected = bluetoothPrinter.isConnected || scanPhase === 'connected';
+  const bleSupported = bluetoothPrinter.isSupported();
+  const serialSupported = bluetoothPrinter.isSerialSupported();
 
   return <div className="modal-overlay" onClick={onClose} style={{ zIndex: 2000 }}>
     <div className="modal-card" onClick={event => event.stopPropagation()} style={{ maxWidth: '500px', background: 'var(--bg-modal)', border: '1px solid var(--border-color)', borderRadius: '20px' }}>
@@ -79,12 +105,17 @@ export const BluetoothModal = ({ onClose, onConnected }) => {
           <div style={{ textAlign: 'center', marginBottom: '16px' }}>
             <Printer size={44} color="var(--apple-blue)" style={{ marginBottom: '8px', opacity: 0.8 }} />
             <h4 style={{ fontSize: '16px', fontWeight: '800', color: 'var(--text-main)' }}>Cari & Sambungkan Thermal Printer</h4>
-            <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px', lineHeight: '1.5' }}>Nyalakan Bluetooth HP / PC & Printer Thermal Kasir Anda, lalu klik tombol di bawah.</p>
+            <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px', lineHeight: '1.5' }}>Pilih cara koneksi yang sesuai dengan tipe printer Anda.</p>
           </div>
-          <button type="button" onClick={handleScan} disabled={loading} className="btn-primary" style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '13px', borderRadius: '12px', fontSize: '14px', fontWeight: '700' }}>
-            {loading ? <RefreshCw className="spin" size={18} /> : <Bluetooth size={18} />}
-            <span>{loading ? 'Memindai Perangkat Bluetooth...' : 'Pindai Perangkat Bluetooth'}</span>
+          <button type="button" onClick={handleBleScan} disabled={loading || !bleSupported} className="btn-primary" style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '13px', borderRadius: '12px', fontSize: '14px', fontWeight: '700', opacity: bleSupported ? 1 : 0.55 }}>
+            {loading && scanPhase === 'scanning-ble' ? <RefreshCw className="spin" size={18} /> : <Bluetooth size={18} />}
+            <span>{bleSupported ? 'Cari Perangkat Bluetooth (BLE)' : 'Bluetooth BLE Tidak Didukung'}</span>
           </button>
+          <button type="button" onClick={handleSerialScan} disabled={loading || !serialSupported} className="receipt-action" style={{ width: '100%', marginTop: '10px', minHeight: '46px', opacity: serialSupported ? 1 : 0.55 }}>
+            {loading && scanPhase === 'scanning-serial' ? <RefreshCw className="spin" size={17} /> : <Printer size={17} />}
+            <span>{serialSupported ? 'Pilih Port COM / Bluetooth Klasik' : 'Port COM Tidak Didukung'}</span>
+          </button>
+          <p style={{ margin: '12px 2px 0', color: 'var(--text-muted)', fontSize: '11px', lineHeight: '1.5' }}>Kebanyakan printer thermal 58/80mm memakai Bluetooth klasik. Pasangkan printer di Bluetooth Windows terlebih dahulu, lalu gunakan pilihan port COM.</p>
           {scanError && <div style={{ marginTop: '12px', padding: '10px 12px', borderRadius: '10px', background: 'rgba(255, 59, 48, 0.1)', border: '1px solid rgba(255, 59, 48, 0.3)', color: 'var(--apple-red)', fontSize: '12px', lineHeight: '1.45' }}>{scanError}</div>}
         </div>}
       </div>

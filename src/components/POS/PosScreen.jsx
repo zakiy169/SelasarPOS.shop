@@ -212,6 +212,7 @@ export const PosScreen = ({
       tableName: customerType === 'Dine-In' ? selectedTable : 'Takeaway Counter',
       customerName: selectedMember ? selectedMember.name : 'Pelanggan Umum',
       memberId: selectedMember?.id || null,
+      customerKey: selectedMember?.id || null,
       items: cartItems,
       subtotal,
       tax,

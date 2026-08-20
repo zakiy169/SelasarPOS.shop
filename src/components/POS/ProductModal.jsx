@@ -49,6 +49,7 @@ export const ProductModal = ({ product, onClose, onAddToCart, addons = [] }) => 
       name: product.name,
       basePrice: product.price,
       costPrice: Number(product.costPrice) || 0,
+      hppSnapshot: Number(product.costPrice) || 0,
       itemUnitPrice,
       totalPrice,
       qty: quantity,

@@ -46,10 +46,12 @@ const getDefaultPackUnitName = (unit) => {
   return getUnitMeta(unit).defaultPackUnitName;
 };
 
-export const InventoryManager = ({ inventory = [], setInventory }) => {
+export const InventoryManager = ({ inventory = [], setInventory, onRecordInventoryMovement = () => {}, onAddExpense = () => {} }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [restockItem, setRestockItem] = useState(null);
   const [restockPacksQty, setRestockPacksQty] = useState(1);
+  const [restockExpenseAmount, setRestockExpenseAmount] = useState('');
+  const [restockExpensePayment, setRestockExpensePayment] = useState('cash');
 
   const [formData, setFormData] = useState({
     id: '',
@@ -151,6 +153,8 @@ export const InventoryManager = ({ inventory = [], setInventory }) => {
     sounds.playBeep();
     setRestockItem(item);
     setRestockPacksQty(1);
+    setRestockExpenseAmount('');
+    setRestockExpensePayment('cash');
   };
 
   const handleConfirmRestock = () => {
@@ -180,6 +184,30 @@ export const InventoryManager = ({ inventory = [], setInventory }) => {
         return item;
       })
     );
+    onRecordInventoryMovement({
+      inventoryId: restockItem.id,
+      inventoryName: restockItem.name,
+      type: 'in',
+      reason: `Restock ${packages} ${restockItem.packUnitName || 'kemasan'}`,
+      quantity: addedAmount,
+      unit: restockItem.unit,
+      stockBefore: Number(restockItem.stock) || 0,
+      stockAfter: (Number(restockItem.stock) || 0) + addedAmount,
+    });
+    const expenseAmount = Number(restockExpenseAmount) || 0;
+    if (expenseAmount > 0) {
+      onAddExpense({
+        id: `EXP-${Date.now()}`,
+        title: `Restock ${restockItem.name}`,
+        amount: expenseAmount,
+        category: 'Bahan baku',
+        paymentMethod: restockExpensePayment,
+        date: new Date().toISOString(),
+        note: `${packages} ${restockItem.packUnitName || 'kemasan'} · +${addedAmount} ${restockItem.unit}`,
+        source: 'inventory_restock',
+        inventoryId: restockItem.id,
+      });
+    }
 
     setRestockItem(null);
   };
@@ -211,6 +239,33 @@ export const InventoryManager = ({ inventory = [], setInventory }) => {
 
       return [normalized, ...prev];
     });
+
+    const existing = inventory.find((item) => item.id === normalized.id);
+    const stockBefore = Number(existing?.stock) || 0;
+    const stockAfter = Number(normalized.stock) || 0;
+    if (existing && stockBefore !== stockAfter) {
+      onRecordInventoryMovement({
+        inventoryId: normalized.id,
+        inventoryName: normalized.name,
+        type: stockAfter > stockBefore ? 'adjustment_in' : 'adjustment_out',
+        reason: 'Penyesuaian stok manual',
+        quantity: Math.abs(stockAfter - stockBefore),
+        unit: normalized.unit,
+        stockBefore,
+        stockAfter,
+      });
+    } else if (!existing && stockAfter > 0) {
+      onRecordInventoryMovement({
+        inventoryId: normalized.id,
+        inventoryName: normalized.name,
+        type: 'in',
+        reason: 'Stok awal bahan baru',
+        quantity: stockAfter,
+        unit: normalized.unit,
+        stockBefore: 0,
+        stockAfter,
+      });
+    }
 
     setIsEditing(false);
   };
@@ -497,6 +552,14 @@ export const InventoryManager = ({ inventory = [], setInventory }) => {
                     {restockItem.packUnitName || 'Kemasan'}
                   </span>
                 </div>
+                <label style={{ display: 'grid', gap: '6px', marginTop: '14px', fontSize: '12px', fontWeight: '700', color: 'var(--text-main)' }}>
+                  Total biaya belanja (opsional)
+                  <div className="expense-money-input"><b>Rp</b><input type="number" min="0" inputMode="numeric" value={restockExpenseAmount} onFocus={selectZeroOnFocus} onChange={event => setRestockExpenseAmount(event.target.value)} placeholder="0 — otomatis dicatat ke arus kas" /></div>
+                </label>
+                <label style={{ display: 'grid', gap: '6px', marginTop: '10px', fontSize: '12px', fontWeight: '700', color: 'var(--text-main)' }}>
+                  Metode pembayaran belanja
+                  <select className="apple-input" value={restockExpensePayment} onChange={event => setRestockExpensePayment(event.target.value)}><option value="cash">Tunai</option><option value="transfer">Transfer</option><option value="qris">QRIS</option><option value="debit">Kartu debit</option></select>
+                </label>
               </div>
 
               {(() => {

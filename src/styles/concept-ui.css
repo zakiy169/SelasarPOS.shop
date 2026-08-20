@@ -521,6 +521,29 @@ input:focus, textarea:focus, select:focus { border-color: color-mix(in srgb, var
   .report-kpi-grid { grid-template-columns: 1fr 1fr !important; }
 }
 
+/* Mobile interaction hardening for reports, settings, and long operational modals. */
+@media (max-width: 768px) {
+  .report-hub { height: auto !important; min-height: 100%; padding-bottom: calc(118px + env(safe-area-inset-bottom)) !important; overflow: visible !important; }
+  .report-hub-header { gap: 12px; flex-wrap: wrap; }.report-hub-header > div { min-width: 0; flex: 1 1 190px; }.report-primary-action { min-height: 44px !important; flex: 1 1 170px; justify-content: center; }
+  .report-hub-nav { gap: 8px; }.report-hub-nav button { min-height: 54px; touch-action: manipulation; }.report-filter-bar { position: sticky; top: 72px; z-index: 12; box-shadow: 0 8px 18px rgba(15,23,42,.08); }
+  .report-period-tabs { scrollbar-width: none; }.report-period-tabs::-webkit-scrollbar { display: none; }.report-period-tabs button { min-height: 38px; flex: 0 0 auto; }
+  .report-data-table { -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain; border-radius: 10px; }.report-data-table::after { content: 'Geser tabel ke samping untuk melihat kolom lain'; display: block; padding: 8px 10px 0; color: var(--text-muted); font-size: 9px; }
+  .cashflow-list article { align-items: flex-start; flex-wrap: wrap; }.cashflow-list article > div { min-width: min(100%, 160px); }.cashflow-list article > strong { margin-left: auto; padding-top: 4px; }.cashflow-list .report-text-button, .cashflow-list .report-icon-danger { min-width: 42px; min-height: 42px; margin: 0; display: inline-grid; place-items: center; border-radius: 10px; background: var(--bg-main); }.cashflow-list .report-text-button { padding-inline: 10px; }
+  .movement-list > div, .stock-list > div { align-items: flex-start; }.movement-list strong, .stock-list strong { max-width: 42%; overflow-wrap: anywhere; }
+  .shift-report-values { grid-template-columns: repeat(2, minmax(0,1fr)); }.shift-report-list em { position: static; display: inline-block; margin-top: 10px; }
+  .settings-section-nav { position: sticky; top: 72px; z-index: 12; flex-wrap: nowrap; overflow-x: auto; overscroll-behavior-x: contain; padding: 7px; box-shadow: 0 8px 18px rgba(15,23,42,.08); scrollbar-width: none; }.settings-section-nav::-webkit-scrollbar { display: none; }.settings-section-nav button { flex: 0 0 auto; min-height: 42px; white-space: nowrap; }
+  .modal-overlay { padding-bottom: calc(94px + env(safe-area-inset-bottom)) !important; align-items: center !important; }.modal-card { width: min(560px, 100%) !important; max-height: calc(100dvh - 108px - env(safe-area-inset-bottom)) !important; }.modal-header { min-width: 0; }.modal-header > * { min-width: 0; }.modal-body { overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }.modal-card input:not([type='file']), .modal-card select, .modal-card textarea { font-size: 16px !important; }
+  .modal-footer { gap: 8px; }.modal-footer > button { min-height: 44px; flex: 1 1 130px; }.expense-modal .modal-footer { grid-template-columns: 1fr 1fr !important; }.expense-modal .modal-footer button { min-width: 0; }.expense-field input[type='file'] { min-height: 44px; padding: 8px; font-size: 12px !important; }
+  .inventory-page .modal-overlay { padding-bottom: calc(94px + env(safe-area-inset-bottom)) !important; }.inventory-page .modal-card { max-height: calc(100dvh - 112px - env(safe-area-inset-bottom)) !important; }.inventory-page .modal-body { max-height: min(56dvh, 500px); }.inventory-page .modal-footer { flex-wrap: wrap; }.inventory-page .modal-footer button { min-width: 0; flex: 1 1 130px; }
+}
+
+@media (max-width: 390px) {
+  .report-hub-header h2 { font-size: 17px; }.report-hub-nav { grid-template-columns: 1fr; }.report-hub-nav button { min-height: 48px; }.report-hub-nav small { display: block; }
+  .report-metric-grid { grid-template-columns: 1fr !important; }.report-filter-bar { grid-template-columns: minmax(0,1fr) auto; }.report-filter-bar > label { min-width: 0; padding-inline: 4px; }.report-filter-bar input { min-width: 0; width: 118px; }
+  .cashflow-list article > strong { width: 100%; margin-left: 42px; text-align: left; }.cashflow-list .report-text-button, .cashflow-list .report-icon-danger { min-height: 40px; }
+  .settings-section-nav { margin-inline: -2px; }.modal-overlay { padding-inline: 8px !important; }.modal-card { border-radius: 18px !important; }.modal-header { padding: 12px !important; }.modal-body { padding: 12px !important; }.modal-footer { padding: 10px 12px max(10px, env(safe-area-inset-bottom)) !important; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: .01ms !important; }
 }

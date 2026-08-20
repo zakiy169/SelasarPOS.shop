@@ -60,6 +60,7 @@ const LEGACY_WORKSPACE_KEYS = [
   'selasar_members',
   'selasar_transactions',
   'selasar_expenses',
+  'selasar_inventory_history',
   'selasar_addons',
   'selasar_settings',
   'selasar_shift',
@@ -721,6 +722,14 @@ export function App() {
     return [];
   });
 
+  const [expenseAudit, setExpenseAudit] = useState(() => {
+    return [];
+  });
+
+  const [inventoryHistory, setInventoryHistory] = useState(() => {
+    return [];
+  });
+
   const [activeShift, setActiveShift] = useState(() => {
     return null;
   });
@@ -742,11 +751,26 @@ export function App() {
   const applyCloudSnapshot = useCallback((nextData) => {
     suppressCloudWriteRef.current = true;
     setProducts(nextData.products || []);
-    setInventory(nextData.inventory || []);
+    const nextInventory = nextData.inventory || [];
+    setInventory(nextInventory);
     setTables(nextData.restaurant_tables || []);
     setMembers(nextData.members || []);
     setTransactions(nextData.transactions || []);
     setExpenses(nextData.expenses || nextData.app_settings?.operationalExpenses || []);
+    setExpenseAudit(nextData.app_settings?.expenseAudit || []);
+    const savedInventoryHistory = nextData.inventory_history || nextData.app_settings?.inventoryHistory || [];
+    setInventoryHistory(savedInventoryHistory.length ? savedInventoryHistory : nextInventory.filter(item => Number(item.stock) > 0).map(item => ({
+      id: `STK-OPENING-${item.id}`,
+      date: new Date().toISOString(),
+      inventoryId: item.id,
+      inventoryName: item.name,
+      type: 'opening',
+      reason: 'Saldo stok awal dicatat saat pembaruan laporan',
+      quantity: Number(item.stock) || 0,
+      unit: item.unit || item.satuan || 'pcs',
+      stockBefore: 0,
+      stockAfter: Number(item.stock) || 0,
+    })));
     setAddons(nextData.addons || []);
     setAppSettings(normalizeAppSettings(nextData.app_settings));
     setActiveShift(nextData.active_shift || null);
@@ -1033,14 +1057,14 @@ export function App() {
         members,
         transactions,
         addons,
-        app_settings: { ...appSettings, operationalExpenses: expenses },
+        app_settings: { ...appSettings, operationalExpenses: expenses, inventoryHistory, expenseAudit },
         active_shift: activeShift,
         shift_history: shiftHistory,
         updated_at: new Date().toISOString(),
       });
     }, 250);
     return () => clearTimeout(timeout);
-  }, [activeOrganizationId, cloudReady, products, inventory, tables, members, transactions, expenses, addons, appSettings, activeShift, shiftHistory, queueCloudSave]);
+  }, [activeOrganizationId, cloudReady, products, inventory, tables, members, transactions, inventoryHistory, expenses, expenseAudit, addons, appSettings, activeShift, shiftHistory, queueCloudSave]);
 
   useEffect(() => {
     if (!activeOrganizationId || !cloudReady) return;
@@ -1134,6 +1158,11 @@ export function App() {
 
   useEffect(() => {
     if (!activeOrganizationId || !cloudReady) return;
+    localStorage.setItem(getWorkspaceStorageKey(activeOrganizationId, 'inventory_history'), JSON.stringify(inventoryHistory));
+  }, [inventoryHistory, activeOrganizationId, cloudReady]);
+
+  useEffect(() => {
+    if (!activeOrganizationId || !cloudReady) return;
     localStorage.setItem(getWorkspaceStorageKey(activeOrganizationId, 'expenses'), JSON.stringify(expenses));
   }, [expenses, activeOrganizationId, cloudReady]);
 
@@ -1174,6 +1203,7 @@ export function App() {
         if (key === getWorkspaceStorageKey(activeOrganizationId, 'tables')) setTables(safeReadJson(key, []));
         if (key === getWorkspaceStorageKey(activeOrganizationId, 'members')) setMembers(safeReadJson(key, []));
         if (key === getWorkspaceStorageKey(activeOrganizationId, 'transactions')) setTransactions(safeReadJson(key, []));
+        if (key === getWorkspaceStorageKey(activeOrganizationId, 'inventory_history')) setInventoryHistory(safeReadJson(key, []));
         if (key === getWorkspaceStorageKey(activeOrganizationId, 'expenses')) setExpenses(safeReadJson(key, []));
         if (key === getWorkspaceStorageKey(activeOrganizationId, 'addons')) setAddons(safeReadJson(key, []));
         if (key === getWorkspaceStorageKey(activeOrganizationId, 'settings') && !isUserEditingForm()) setAppSettings(normalizeAppSettings(safeReadJson(key, DEFAULT_APP_SETTINGS)));
@@ -1189,6 +1219,30 @@ export function App() {
       window.removeEventListener('storage', handleStorageChange);
     };
   }, [activeOrganizationId]);
+
+  // Append-only records are merged individually, so a cashier on another
+  // device cannot overwrite a newly created sale, expense, or stock movement.
+  useEffect(() => {
+    if (!activeOrganizationId || !cloudReady) return undefined;
+    const channel = supabase.channel(`organization-ledger:${activeOrganizationId}`)
+      .on('postgres_changes', {
+        event: 'INSERT', schema: 'public', table: 'organization_ledger', filter: `organization_id=eq.${activeOrganizationId}`
+      }, ({ new: entry }) => {
+        if (!entry || entry.created_by === authUserIdRef.current) return;
+        const payload = entry.payload || {};
+        if (entry.event_type === 'transaction.created') setTransactions(prev => prev.some(item => item.id === payload.id) ? prev : [payload, ...prev]);
+        if (entry.event_type === 'transaction.voided') setTransactions(prev => prev.map(item => item.id === payload.transactionId ? { ...item, status: 'void', paymentStatus: 'void', orderStatus: 'cancelled', voidedAt: payload.voidedAt } : item));
+        if (entry.event_type === 'expense.created') setExpenses(prev => prev.some(item => item.id === payload.id) ? prev : [payload, ...prev]);
+        if (entry.event_type === 'expense.updated') setExpenses(prev => prev.map(item => item.id === payload.id ? { ...item, ...payload } : item));
+        if (entry.event_type === 'expense.deleted') setExpenses(prev => prev.filter(item => item.id !== entry.entity_id));
+        if (entry.event_type === 'inventory.movement') {
+          setInventoryHistory(prev => prev.some(item => item.id === payload.id) ? prev : [payload, ...prev].slice(0, 1000));
+          setInventory(prev => prev.map(item => item.id === payload.inventoryId ? { ...item, stock: payload.stockAfter } : item));
+        }
+        if (entry.event_type === 'shift.closed') setShiftHistory(prev => prev.some(item => item.id === payload.id) ? prev : [payload, ...prev]);
+      }).subscribe();
+    return () => { void supabase.removeChannel(channel); };
+  }, [activeOrganizationId, cloudReady]);
 
   // ── Apply theme + font to DOM ────────────────────────────────────────────
   useEffect(() => {
@@ -1971,8 +2025,58 @@ ATURAN:
     }
   };
 
+  const appendLedgerEvent = (eventType, entityId, payload) => {
+    if (!activeOrganizationId || !authUserIdRef.current) return;
+    void supabase.from('organization_ledger').insert({
+      organization_id: activeOrganizationId,
+      event_type: eventType,
+      entity_id: String(entityId),
+      payload,
+      created_by: authUserIdRef.current,
+    }).then(({ error }) => {
+      // The migration may not have been run yet; normal POS data still uses
+      // the existing organization snapshot until the ledger is enabled.
+      if (error && error.code !== '42P01' && error.code !== 'PGRST205') console.warn('Ledger sync:', error.message);
+    });
+  };
+
+  const recordExpenseAudit = (action, expense, previous = null) => {
+    setExpenseAudit(prev => [{
+      id: `EXP-AUDIT-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      action,
+      expenseId: expense?.id || previous?.id,
+      title: expense?.title || previous?.title || 'Pengeluaran',
+      amount: Number(expense?.amount ?? previous?.amount) || 0,
+      date: new Date().toISOString(),
+      previous: previous ? { title: previous.title, amount: previous.amount, category: previous.category, note: previous.note } : null,
+    }, ...prev].slice(0, 1000));
+  };
+
+  const handleAddExpense = (expense) => {
+    const next = { ...expense, id: expense.id || `EXP-${Date.now()}`, createdAt: expense.createdAt || new Date().toISOString() };
+    setExpenses(prev => [next, ...prev]);
+    recordExpenseAudit('created', next);
+    appendLedgerEvent('expense.created', next.id, next);
+  };
+
+  const handleUpdateExpense = (updatedExpense) => {
+    const previous = expenses.find(item => item.id === updatedExpense.id);
+    setExpenses(prev => prev.map(item => item.id === updatedExpense.id ? { ...item, ...updatedExpense, updatedAt: new Date().toISOString() } : item));
+    recordExpenseAudit('updated', updatedExpense, previous);
+    appendLedgerEvent('expense.updated', updatedExpense.id, updatedExpense);
+  };
+
+  const handleDeleteExpense = (expenseId) => {
+    const previous = expenses.find(item => item.id === expenseId);
+    if (!previous) return;
+    setExpenses(prev => prev.filter(item => item.id !== expenseId));
+    recordExpenseAudit('deleted', previous);
+    appendLedgerEvent('expense.deleted', expenseId, previous);
+  };
+
   const handleAddTransaction = (newTx) => {
     setTransactions(prev => [newTx, ...prev]);
+    appendLedgerEvent('transaction.created', newTx.id, newTx);
     if (newTx.customerType === 'Dine-In' && newTx.tableName) {
       setTables(prev => prev.map(t => t.name === newTx.tableName ? { ...t, status: 'occupied', currentOrderId: newTx.id } : t));
     }
@@ -2002,19 +2106,37 @@ ATURAN:
       orderStatus: 'cancelled',
       voidedAt: new Date().toISOString()
     } : t));
+    appendLedgerEvent('transaction.voided', txId, { transactionId: txId, receiptNumber: transaction.receiptNumber, voidedAt: new Date().toISOString() });
 
     (transaction.items || []).forEach(cartItem => {
       (cartItem.ingredients || []).forEach(ingredient => {
+        const target = inventory.find(item => item.id === ingredient.id);
+        const inventoryUnit = target?.unit || target?.satuan || ingredient.unit || 'ml';
+        const restored = convertInventoryQuantity(
+          (Number(ingredient.amount) || 0) * (Number(cartItem.qty ?? cartItem.quantity) || 0),
+          ingredient.unit || inventoryUnit,
+          inventoryUnit
+        );
         setInventory(prev => prev.map(item => {
           if (item.id !== ingredient.id) return item;
-          const inventoryUnit = item.unit || item.satuan || ingredient.unit || 'ml';
-          const restored = convertInventoryQuantity(
-            (Number(ingredient.amount) || 0) * (Number(cartItem.qty ?? cartItem.quantity) || 0),
-            ingredient.unit || inventoryUnit,
-            inventoryUnit
-          );
           return Number.isFinite(restored) ? { ...item, stock: (Number(item.stock) || 0) + restored } : item;
         }));
+        if (target && Number.isFinite(restored) && restored > 0) {
+          const stockMovement = {
+            id: `STK-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+            date: new Date().toISOString(),
+            inventoryId: ingredient.id,
+            inventoryName: target.name,
+            type: 'in',
+            reason: `Pengembalian dari void ${transaction.receiptNumber || 'transaksi'}`,
+            quantity: restored,
+            unit: inventoryUnit,
+            stockBefore: Number(target.stock) || 0,
+            stockAfter: (Number(target.stock) || 0) + restored,
+          };
+          setInventoryHistory(prev => [stockMovement, ...prev].slice(0, 1000));
+          appendLedgerEvent('inventory.movement', stockMovement.id, stockMovement);
+        }
       });
     });
 
@@ -2033,20 +2155,47 @@ ATURAN:
   };
 
   const handleDeductStock = (ingredientId, amountToDeduct, sourceUnit) => {
+    const target = inventory.find(item => item.id === ingredientId);
+    if (!target) return;
+    const inventoryUnit = target.unit || target.satuan || sourceUnit || 'ml';
+    const convertedAmount = sourceUnit
+      ? convertInventoryQuantity(amountToDeduct, sourceUnit, inventoryUnit)
+      : Number(amountToDeduct);
+    if (!Number.isFinite(convertedAmount) || convertedAmount < 0) {
+      console.warn(`Takaran ${sourceUnit || '-'} tidak kompatibel dengan satuan stok ${inventoryUnit}.`);
+      return;
+    }
     setInventory(prev => prev.map(item => {
       if (item.id === ingredientId) {
-        const inventoryUnit = item.unit || item.satuan || sourceUnit || 'ml';
-        const convertedAmount = sourceUnit
-          ? convertInventoryQuantity(amountToDeduct, sourceUnit, inventoryUnit)
-          : Number(amountToDeduct);
-        if (!Number.isFinite(convertedAmount) || convertedAmount < 0) {
-          console.warn(`Takaran ${sourceUnit || '-'} tidak kompatibel dengan satuan stok ${inventoryUnit}.`);
-          return item;
-        }
         return { ...item, stock: Math.max(0, (Number(item.stock) || 0) - convertedAmount) };
       }
       return item;
     }));
+    const stockMovement = {
+      id: `STK-${Date.now()}-${ingredientId}`,
+      date: new Date().toISOString(),
+      inventoryId: ingredientId,
+      inventoryName: target.name,
+      type: 'out',
+      reason: 'Pemakaian untuk transaksi',
+      quantity: convertedAmount,
+      unit: inventoryUnit,
+      stockBefore: Number(target.stock) || 0,
+      stockAfter: Math.max(0, (Number(target.stock) || 0) - convertedAmount),
+    };
+    setInventoryHistory(prev => [stockMovement, ...prev].slice(0, 1000));
+    appendLedgerEvent('inventory.movement', stockMovement.id, stockMovement);
+  };
+
+  const handleRecordInventoryMovement = (movement) => {
+    if (!movement?.inventoryId) return;
+    const nextMovement = {
+      id: movement.id || `STK-${Date.now()}-${movement.inventoryId}`,
+      date: movement.date || new Date().toISOString(),
+      ...movement,
+    };
+    setInventoryHistory(prev => [nextMovement, ...prev].slice(0, 1000));
+    appendLedgerEvent('inventory.movement', nextMovement.id, nextMovement);
   };
 
   const handleUpdateOrderStatus = (orderId, nextStatus) => {
@@ -2080,7 +2229,9 @@ ATURAN:
 
   const handleCloseShift = (summary) => {
     if (activeShift) {
-      setShiftHistory(prev => [{ ...activeShift, ...summary, closingTime: summary?.closingTime || new Date().toISOString() }, ...prev]);
+      const closedShift = { ...activeShift, ...summary, closingTime: summary?.closingTime || new Date().toISOString() };
+      setShiftHistory(prev => [closedShift, ...prev]);
+      appendLedgerEvent('shift.closed', closedShift.id, closedShift);
     }
     setActiveShift(null);
   };
@@ -2118,6 +2269,9 @@ ATURAN:
     setTables([]);
     setMembers([]);
     setTransactions([]);
+    setExpenses([]);
+    setExpenseAudit([]);
+    setInventoryHistory([]);
     setAddons([]);
     setActiveShift(null);
     setShiftHistory([]);
@@ -2302,6 +2456,14 @@ ATURAN:
             transactions={transactions}
             expenses={expenses}
             setExpenses={setExpenses}
+            expenseAudit={expenseAudit}
+            onAddExpense={handleAddExpense}
+            onUpdateExpense={handleUpdateExpense}
+            onDeleteExpense={handleDeleteExpense}
+            products={products}
+            inventory={inventory}
+            inventoryHistory={inventoryHistory}
+            members={members}
             appSettings={appSettings}
             activeShift={activeShift}
             shiftHistory={shiftHistory}
@@ -2325,6 +2487,8 @@ ATURAN:
           <InventoryManager
             inventory={inventory}
             setInventory={setInventory}
+            onRecordInventoryMovement={handleRecordInventoryMovement}
+            onAddExpense={handleAddExpense}
             unitOptions={['gr', 'kg', 'ml', 'liter', 'pcs']}
           />
         )}
@@ -2338,6 +2502,7 @@ ATURAN:
             theme={theme}
             setTheme={setTheme}
             onOpenBluetoothModal={() => setShowBluetoothModal(true)}
+            onOpenReceiptSettings={() => setActiveTab('receipt_settings')}
             activeShift={activeShift}
             onOpenShift={(shift) => setActiveShift(shift)}
             onUpdateShift={(updatedShift) => setActiveShift(updatedShift)}
