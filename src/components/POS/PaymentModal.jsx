@@ -1,19 +1,27 @@
 import React, { useState } from 'react';
-import { X, QrCode, Banknote, CreditCard, Wallet, CheckCircle, Sparkles } from 'lucide-react';
+import { X, QrCode, Banknote, CreditCard, Wallet, CheckCircle } from 'lucide-react';
 import { formatRupiah } from '../../utils/formatters';
 import { sounds } from '../../utils/audio';
 import confetti from 'canvas-confetti';
 
-export const PaymentModal = ({ grandTotal, cartItems, customerType, tableName, customerName, qrisImage, onClose, onPaymentSuccess }) => {
+export const PaymentModal = ({ grandTotal, cartItems, customerType, tableName, qrisImage, onClose, onPaymentSuccess }) => {
   const [paymentMethod, setPaymentMethod] = useState('qris'); // 'qris' | 'cash' | 'card' | 'ewallet'
-  const [cashReceived, setCashReceived] = useState(grandTotal);
+  const [cashReceived, setCashReceived] = useState('');
   const [selectedBank, setSelectedBank] = useState('BCA');
   const [selectedEwallet, setSelectedEwallet] = useState('GoPay');
-  const [discountAmount, setDiscountAmount] = useState(0);
+  const discountAmount = 0;
   const [isProcessing, setIsProcessing] = useState(false);
 
   const finalPayable = Math.max(0, grandTotal - discountAmount);
-  const cashChange = Math.max(0, Number(cashReceived) - finalPayable);
+  const numericCashReceived = cashReceived === '' ? Number.NaN : Number(cashReceived);
+  const cashDifference = Number.isFinite(numericCashReceived) ? numericCashReceived - finalPayable : null;
+  const cashChange = Math.max(0, cashDifference || 0);
+  const quickCashOptions = [...new Set([
+    finalPayable,
+    Math.ceil(finalPayable / 10000) * 10000,
+    Math.ceil(finalPayable / 50000) * 50000,
+    Math.ceil(finalPayable / 100000) * 100000
+  ])].filter((amount) => amount >= finalPayable);
 
   const handleQuickCash = (amount) => {
     sounds.playBeep();
@@ -21,7 +29,7 @@ export const PaymentModal = ({ grandTotal, cartItems, customerType, tableName, c
   };
 
   const handleProcessPayment = () => {
-    if (paymentMethod === 'cash' && Number(cashReceived) < finalPayable) {
+    if (paymentMethod === 'cash' && (!Number.isFinite(numericCashReceived) || numericCashReceived < finalPayable)) {
       sounds.playError();
       alert('Nominal uang tunai kurang dari total tagihan!');
       return;
@@ -42,7 +50,7 @@ export const PaymentModal = ({ grandTotal, cartItems, customerType, tableName, c
       setIsProcessing(false);
       onPaymentSuccess({
         paymentMethod,
-        cashReceived: paymentMethod === 'cash' ? Number(cashReceived) : finalPayable,
+        cashReceived: paymentMethod === 'cash' ? numericCashReceived : finalPayable,
         cashChange: paymentMethod === 'cash' ? cashChange : 0,
         bankName: paymentMethod === 'card' ? selectedBank : null,
         ewalletName: paymentMethod === 'ewallet' ? selectedEwallet : null,
@@ -144,7 +152,7 @@ export const PaymentModal = ({ grandTotal, cartItems, customerType, tableName, c
                 background: '#FFF'
               }}>
                 <img 
-                  src={qrisImage || `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=KEDAI_KOPI_SELASAR_PAYMENT_${grandTotal}`} 
+                  src={qrisImage || `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=KEDAI_KOPI_SELASAR_PAYMENT_${finalPayable}`} 
                   alt="QRIS Code" 
                   style={{ width: '160px', height: '160px', objectFit: 'contain' }}
                 />
@@ -163,8 +171,11 @@ export const PaymentModal = ({ grandTotal, cartItems, customerType, tableName, c
                 </label>
                 <input
                   type="number"
+                  min="0"
+                  step="1"
                   value={cashReceived}
-                  onChange={(e) => setCashReceived(Number(e.target.value))}
+                  onChange={(e) => setCashReceived(e.target.value)}
+                  placeholder="Masukkan uang yang diterima"
                   style={{
                     width: '100%',
                     padding: '12px 16px',
@@ -181,7 +192,7 @@ export const PaymentModal = ({ grandTotal, cartItems, customerType, tableName, c
 
               {/* Quick Cash Options */}
               <div className="cash-quick-grid">
-                {[finalPayable, 20000, 50000, 100000].map((amt) => (
+                {quickCashOptions.map((amt) => (
                   <button key={amt} className="cash-quick-btn" onClick={() => handleQuickCash(amt)}>
                     {amt === finalPayable ? 'Uang Pas' : formatRupiah(amt)}
                   </button>
@@ -190,8 +201,8 @@ export const PaymentModal = ({ grandTotal, cartItems, customerType, tableName, c
 
               {/* Change Calculation */}
               <div style={{
-                background: cashChange >= 0 ? 'rgba(16, 185, 129, 0.12)' : 'rgba(239, 68, 68, 0.12)',
-                border: `1px solid ${cashChange >= 0 ? '#10B981' : '#EF4444'}`,
+                background: cashDifference !== null && cashDifference >= 0 ? 'rgba(16, 185, 129, 0.12)' : 'rgba(239, 68, 68, 0.12)',
+                border: `1px solid ${cashDifference !== null && cashDifference >= 0 ? '#10B981' : '#EF4444'}`,
                 borderRadius: '12px',
                 padding: '12px 16px',
                 display: 'flex',
@@ -199,9 +210,9 @@ export const PaymentModal = ({ grandTotal, cartItems, customerType, tableName, c
                 justifyContent: 'space-between',
                 marginTop: '4px'
               }}>
-                <span style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-main)' }}>Uang Kembalian:</span>
-                <span style={{ fontSize: '18px', fontWeight: '900', color: cashChange >= 0 ? '#10B981' : '#EF4444' }}>
-                  {formatRupiah(cashChange)}
+                <span style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-main)' }}>{cashDifference === null ? 'Uang diterima belum diisi' : cashDifference >= 0 ? 'Uang Kembalian:' : 'Uang Masih Kurang:'}</span>
+                <span style={{ fontSize: '18px', fontWeight: '900', color: cashDifference !== null && cashDifference >= 0 ? '#10B981' : '#EF4444' }}>
+                  {cashDifference === null ? '-' : formatRupiah(Math.abs(cashDifference))}
                 </span>
               </div>
             </div>

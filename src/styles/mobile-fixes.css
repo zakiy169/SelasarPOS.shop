@@ -71,6 +71,12 @@
     flex-wrap: wrap;
   }
 
+  /* Override an older small-screen rule that hid every header utility except
+     the profile. The header and bottom "Lainnya" button share one menu. */
+  .header-right > .header-menu-toggle {
+    display: inline-flex !important;
+  }
+
   .nav-tabs {
     max-width: 100%;
     min-width: 0;
@@ -149,7 +155,9 @@
     left: 12px !important;
     right: 12px !important;
     bottom: calc(
-      12px + env(safe-area-inset-bottom)
+      var(--selasar-mobile-bottom-safe, 82px)
+      + 8px
+      + env(safe-area-inset-bottom)
     ) !important;
 
     width: auto !important;
@@ -177,6 +185,40 @@
 
     border-left: none !important;
     border-top: 1px solid var(--border-color);
+
+    /* Closed means fully outside the viewport. Previously its 58px header
+       remained above the bottom navigation and made the menu look missing. */
+    transform: translateY(calc(100% + 90px)) !important;
+    visibility: hidden;
+    pointer-events: none;
+  }
+
+  .pos-cart-sidebar.open-mobile {
+    transform: translateY(0) !important;
+    visibility: visible;
+    pointer-events: auto;
+  }
+
+  /* Keep the expanded app menu inside the space above the persistent
+     bottom navigation so both controls stay reachable. */
+  .nav-tabs.is-open {
+    max-height: calc(100dvh - 154px - env(safe-area-inset-bottom, 0px)) !important;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  body:has(.nav-tabs.is-open) .ai-assistant-minimized,
+  body:has(.nav-tabs.is-open) .ai-assistant-widget {
+    display: none !important;
+  }
+
+  body:has(.mobile-cart-float-btn) .ai-assistant-minimized,
+  body:has(.mobile-cart-float-btn) .ai-assistant-widget {
+    bottom: calc(
+      var(--selasar-mobile-bottom-safe, 82px)
+      + 72px
+      + env(safe-area-inset-bottom)
+    ) !important;
   }
 
   .cart-items-container {

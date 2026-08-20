@@ -1,7 +1,8 @@
 import React, { useRef, useState } from 'react';
-import { Plus, Edit2, Trash2, Save, X, Image as ImageIcon, Sparkles, Layers, Upload } from 'lucide-react';
+import { Plus, Edit2, Trash2, Save, X, Sparkles, Layers, Upload } from 'lucide-react';
 import { formatRupiah } from '../../utils/formatters';
 import { parsePosBackupJson } from '../../utils/jsonImport';
+import { ProductImage } from '../ProductImage';
 
 export const MenuManager = ({
   products,
@@ -54,8 +55,8 @@ export const MenuManager = ({
     id: '',
     name: '',
     categoryId: 'signature',
-    price: 0,
-    costPrice: 0,
+    price: '',
+    costPrice: '',
     image: '',
     description: '',
     isAvailable: true,
@@ -66,6 +67,7 @@ export const MenuManager = ({
     if (item) {
       setFormData({
         ...item,
+        categoryId: item.categoryId || item.category || 'signature',
         ingredients: item.ingredients ? item.ingredients.map(i => ({ ...i })) : []
       });
     } else {
@@ -73,8 +75,8 @@ export const MenuManager = ({
         id: `prod-${Date.now()}`,
         name: '',
         categoryId: 'espresso',
-        price: 0,
-        costPrice: 0,
+        price: '',
+        costPrice: '',
         image: 'https://images.unsplash.com/photo-1541167760496-1628856ab772?w=500&auto=format&fit=crop&q=80',
         description: '',
         isAvailable: true,
@@ -89,7 +91,7 @@ export const MenuManager = ({
     const newIng = {
       id: firstInv ? firstInv.id : `ing-${Date.now()}`,
       name: firstInv ? firstInv.name : 'Pilih Bahan Baku',
-      amount: 10,
+      amount: '',
       unit: firstInv ? firstInv.unit : 'ml'
     };
     setFormData(prev => ({
@@ -114,7 +116,7 @@ export const MenuManager = ({
       } else if (field === 'amount') {
         updated[index] = {
           ...updated[index],
-          amount: parseFloat(value) || 0
+          amount: value === '' ? '' : Math.max(0, Number(value) || 0)
         };
       }
       return { ...prev, ingredients: updated };
@@ -150,12 +152,21 @@ export const MenuManager = ({
   const handleSave = () => {
     if (!formData.name || formData.price <= 0) return alert('Nama dan harga jual harus diisi!');
 
+    const normalizedProduct = {
+      ...formData,
+      name: formData.name.trim(),
+      category: formData.categoryId,
+      price: Math.max(0, Number(formData.price) || 0),
+      costPrice: Math.max(0, Number(formData.costPrice) || 0),
+      ingredients: (formData.ingredients || []).filter((ingredient) => ingredient.id && Number(ingredient.amount) > 0)
+    };
+
     setProducts(prev => {
-      const exists = prev.find(p => p.id === formData.id);
+      const exists = prev.find(p => p.id === normalizedProduct.id);
       if (exists) {
-        return prev.map(p => p.id === formData.id ? formData : p);
+        return prev.map(p => p.id === normalizedProduct.id ? normalizedProduct : p);
       }
-      return [formData, ...prev];
+      return [normalizedProduct, ...prev];
     });
     setIsEditing(false);
   };
@@ -206,7 +217,7 @@ export const MenuManager = ({
       </div>
 
       <div className="apple-table-container">
-        <table className="apple-table">
+        <table className="apple-table menu-product-table">
           <thead>
             <tr>
               <th>Foto</th>
@@ -223,9 +234,7 @@ export const MenuManager = ({
             {products.map(item => (
               <tr key={item.id}>
                 <td>
-                  <div style={{ width: '40px', height: '40px', borderRadius: '8px', overflow: 'hidden', background: '#F5F5F7' }}>
-                    <img src={item.image} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  </div>
+                  <ProductImage src={item.image} alt={item.name} name={item.name} category={item.categoryId || item.category} className="menu-product-thumb" />
                 </td>
                 <td style={{ fontWeight: '600' }}>{item.name}</td>
                 <td style={{ textTransform: 'capitalize' }}>{item.categoryId}</td>
@@ -329,18 +338,24 @@ export const MenuManager = ({
                   <label style={{ display: 'block', fontSize: '13px', color: 'var(--text-muted)', marginBottom: '6px' }}>Harga Jual (Rp)</label>
                   <input 
                     type="number" 
+                    min="0"
+                    step="1"
                     className="apple-input" 
                     value={formData.price}
-                    onChange={(e) => setFormData({...formData, price: parseFloat(e.target.value) || 0})}
+                    onChange={(e) => setFormData({...formData, price: e.target.value})}
+                    placeholder="Masukkan harga jual"
                   />
                 </div>
                 <div>
                   <label style={{ display: 'block', fontSize: '13px', color: 'var(--text-muted)', marginBottom: '6px' }}>HPP / Modal (Rp)</label>
                   <input 
                     type="number" 
+                    min="0"
+                    step="1"
                     className="apple-input" 
                     value={formData.costPrice}
-                    onChange={(e) => setFormData({...formData, costPrice: parseFloat(e.target.value) || 0})}
+                    onChange={(e) => setFormData({...formData, costPrice: e.target.value})}
+                    placeholder="Kosongkan atau hitung dari resep"
                   />
                 </div>
               </div>
@@ -404,6 +419,8 @@ export const MenuManager = ({
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flex: 1 }}>
                           <input
                             type="number"
+                            min="0"
+                            step="0.001"
                             className="apple-input"
                             style={{ padding: '6px 10px', fontSize: '13px' }}
                             value={ing.amount}
@@ -461,11 +478,7 @@ export const MenuManager = ({
                     onChange={(e) => setFormData({...formData, image: e.target.value})}
                     placeholder="https://..."
                   />
-                  {formData.image && (
-                    <div style={{ width: '40px', height: '40px', borderRadius: '8px', overflow: 'hidden', background: '#F5F5F7' }}>
-                      <img src={formData.image} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    </div>
-                  )}
+                  <ProductImage src={formData.image} alt="Preview produk" name={formData.name || 'Produk baru'} category={formData.categoryId} className="menu-product-thumb" />
                 </div>
               </div>
 

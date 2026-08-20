@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { KeyRound, Lock, DollarSign, CheckCircle2, Sliders, Edit3, UserCheck, Clock, X } from 'lucide-react';
-import { formatRupiah, formatDateIndonesian } from '../../utils/formatters';
+import { KeyRound, Lock, DollarSign, Sliders, Edit3, UserCheck, X } from 'lucide-react';
+import { formatRupiah } from '../../utils/formatters';
 import { sounds } from '../../utils/audio';
 
 export const ShiftSettings = ({ 
@@ -9,6 +9,8 @@ export const ShiftSettings = ({
   onUpdateShift,
   onCloseShift, 
   products = [], 
+  transactions = [],
+  expenses = [],
   onToggleProductAvailability,
   embedded = false
 }) => {
@@ -17,22 +19,59 @@ export const ShiftSettings = ({
   const [showCloseModal, setShowCloseModal] = useState(false);
 
   // Form states for Shift
-  const [baristaName, setBaristaName] = useState('Rian Barista');
+  const [baristaName, setBaristaName] = useState('');
   const [shiftType, setShiftType] = useState('Shift Pagi');
-  const [openingCash, setOpeningCash] = useState(500000);
-  const [closingPhysicalCash, setClosingPhysicalCash] = useState(1250000);
+  const [openingCash, setOpeningCash] = useState('');
+  const [closingPhysicalCash, setClosingPhysicalCash] = useState('');
 
   useEffect(() => {
     if (activeShift) {
-      setBaristaName(activeShift.baristaName || 'Rian Barista');
+      setBaristaName(activeShift.baristaName || '');
       setShiftType(activeShift.shiftType || 'Shift Pagi');
-      setOpeningCash(activeShift.openingCash || 500000);
+      setOpeningCash(activeShift.openingCash ?? '');
     }
   }, [activeShift]);
+
+  const parseMoney = (value) => {
+    if (value === '') return null;
+    const amount = Number(value);
+    return Number.isFinite(amount) && amount >= 0 ? amount : null;
+  };
+
+  const openNewShiftModal = () => {
+    setBaristaName('');
+    setShiftType('Shift Pagi');
+    setOpeningCash('');
+    setShowOpenModal(true);
+  };
+
+  const openCloseShiftModal = () => {
+    setClosingPhysicalCash('');
+    setShowCloseModal(true);
+  };
+
+  const shiftStartedAt = activeShift ? new Date(activeShift.startTime || activeShift.createdAt || 0).getTime() : 0;
+  const shiftTransactions = activeShift ? transactions.filter((tx) => {
+    const txTime = new Date(tx.date || tx.createdAt || tx.timestamp || 0).getTime();
+    const isVoid = String(tx.status || tx.paymentStatus || '').toLowerCase() === 'void';
+    return Number.isFinite(txTime) && txTime >= shiftStartedAt && !isVoid;
+  }) : [];
+  const cashSales = shiftTransactions
+    .filter((tx) => String(tx.paymentMethod || '').toLowerCase() === 'cash')
+    .reduce((sum, tx) => sum + (Number(tx.total) || 0), 0);
+  const cashExpenses = activeShift ? expenses.filter((expense) => {
+    const expenseTime = new Date(expense.createdAt || expense.date || 0).getTime();
+    return Number.isFinite(expenseTime)
+      && expenseTime >= shiftStartedAt
+      && String(expense.paymentMethod || '').toLowerCase() === 'cash';
+  }).reduce((sum, expense) => sum + (Number(expense.amount) || 0), 0) : 0;
+  const expectedCash = (Number(activeShift?.openingCash) || 0) + cashSales - cashExpenses;
 
   const handleOpenShiftSubmit = (e) => {
     if (e) e.preventDefault();
     if (!baristaName.trim()) return alert('Harap isi nama pegawai / barista duty!');
+    const normalizedOpeningCash = parseMoney(openingCash);
+    if (normalizedOpeningCash === null) return alert('Modal kas awal harus berupa angka 0 atau lebih.');
 
     sounds.playCashRegister();
     const formattedShiftName = `${shiftType} (${baristaName.trim()})`;
@@ -42,7 +81,7 @@ export const ShiftSettings = ({
       shiftType: shiftType,
       baristaName: baristaName.trim(),
       startTime: new Date().toISOString(),
-      openingCash: Number(openingCash) || 0
+      openingCash: normalizedOpeningCash
     });
     setShowOpenModal(false);
   };
@@ -50,6 +89,8 @@ export const ShiftSettings = ({
   const handleEditShiftSubmit = (e) => {
     if (e) e.preventDefault();
     if (!baristaName.trim()) return alert('Harap isi nama pegawai / barista duty!');
+    const normalizedOpeningCash = parseMoney(openingCash);
+    if (normalizedOpeningCash === null) return alert('Modal kas awal harus berupa angka 0 atau lebih.');
 
     sounds.playBeep();
     const formattedShiftName = `${shiftType} (${baristaName.trim()})`;
@@ -58,7 +99,7 @@ export const ShiftSettings = ({
       name: formattedShiftName,
       shiftType: shiftType,
       baristaName: baristaName.trim(),
-      openingCash: Number(openingCash) || 0
+      openingCash: normalizedOpeningCash
     };
 
     if (onUpdateShift) {
@@ -70,16 +111,23 @@ export const ShiftSettings = ({
   };
 
   const handleCloseShiftConfirm = () => {
+    const physicalCash = parseMoney(closingPhysicalCash);
+    if (physicalCash === null) return alert('Masukkan jumlah uang fisik di laci, minimal 0.');
     sounds.playCashRegister();
     onCloseShift({
       closingTime: new Date().toISOString(),
-      physicalCash: Number(closingPhysicalCash)
+      physicalCash,
+      cashSales,
+      cashExpenses,
+      expectedCash,
+      cashDifference: physicalCash - expectedCash,
+      transactionCount: shiftTransactions.length
     });
     setShowCloseModal(false);
   };
 
   return (
-    <div style={{ padding: embedded ? '0' : '24px', flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '20px', maxWidth: '1000px', margin: '0 auto', width: '100%' }}>
+    <div className={`shift-page ${embedded ? 'is-embedded' : ''}`} style={{ padding: embedded ? '0' : '24px', flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '20px', maxWidth: '1000px', margin: '0 auto', width: '100%' }}>
       {!embedded && <div>
         <h2 style={{ fontSize: '24px', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '10px' }}>
           <KeyRound size={26} color="var(--apple-blue)" />
@@ -139,7 +187,7 @@ export const ShiftSettings = ({
                   <span>Edit Pegawai</span>
                 </button>
                 <button
-                  onClick={() => { sounds.playBeep(); setShowCloseModal(true); }}
+                  onClick={() => { sounds.playBeep(); openCloseShiftModal(); }}
                   className="btn-primary"
                   style={{ background: 'var(--apple-red)', display: 'flex', alignItems: 'center', gap: '8px' }}
                 >
@@ -149,7 +197,7 @@ export const ShiftSettings = ({
               </>
             ) : (
               <button
-                onClick={() => { sounds.playBeep(); setShowOpenModal(true); }}
+                onClick={() => { sounds.playBeep(); openNewShiftModal(); }}
                 className="btn-primary"
                 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
               >
@@ -262,9 +310,12 @@ export const ShiftSettings = ({
                   </label>
                   <input
                     type="number"
+                    min="0"
+                    step="1"
                     className="apple-input"
                     value={openingCash}
                     onChange={(e) => setOpeningCash(e.target.value)}
+                    placeholder="0"
                   />
                 </div>
               </div>
@@ -334,6 +385,8 @@ export const ShiftSettings = ({
                   </label>
                   <input
                     type="number"
+                    min="0"
+                    step="1"
                     className="apple-input"
                     value={openingCash}
                     onChange={(e) => setOpeningCash(e.target.value)}
@@ -367,8 +420,11 @@ export const ShiftSettings = ({
             <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
               <div style={{ background: 'var(--bg-main)', padding: '12px', borderRadius: 'var(--radius-md)', fontSize: '13px', border: '1px solid var(--border-color)' }}>
                 <div>Pegawai Duty: <strong>{activeShift ? (activeShift.baristaName || activeShift.name) : '-'}</strong></div>
-                <div>Modal Kas Awal: <strong>{formatRupiah(activeShift ? activeShift.openingCash : 500000)}</strong></div>
-                <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>Target Kas di Laci: Uang Awal + Total Penjualan Cash</div>
+                <div>Modal Kas Awal: <strong>{formatRupiah(activeShift?.openingCash ?? 0)}</strong></div>
+                <div>Penjualan Tunai Shift Ini: <strong>{formatRupiah(cashSales)}</strong></div>
+                <div>Pengeluaran Tunai Shift Ini: <strong>-{formatRupiah(cashExpenses)}</strong></div>
+                <div>Target Kas di Laci: <strong>{formatRupiah(expectedCash)}</strong></div>
+                <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>{shiftTransactions.length} transaksi sejak shift dibuka.</div>
               </div>
 
               <div>
@@ -377,11 +433,20 @@ export const ShiftSettings = ({
                 </label>
                 <input
                   type="number"
+                  min="0"
+                  step="1"
                   className="apple-input"
                   value={closingPhysicalCash}
                   onChange={(e) => setClosingPhysicalCash(e.target.value)}
+                  placeholder="Hitung lalu masukkan uang fisik"
                 />
               </div>
+              {closingPhysicalCash !== '' && parseMoney(closingPhysicalCash) !== null && (
+                <div style={{ padding: '12px', borderRadius: '10px', background: parseMoney(closingPhysicalCash) - expectedCash === 0 ? 'rgba(16,185,129,.1)' : 'rgba(245,158,11,.1)', fontSize: '13px' }}>
+                  Selisih kas: <strong>{formatRupiah(parseMoney(closingPhysicalCash) - expectedCash)}</strong>
+                  <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '3px' }}>Nilai positif berarti kas lebih, nilai negatif berarti kas kurang.</div>
+                </div>
+              )}
             </div>
             <div className="modal-footer">
               <button 

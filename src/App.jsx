@@ -16,6 +16,7 @@ import { SettingsScreen } from './components/Settings/SettingsScreen';
 import { ReceiptSettings } from './components/Settings/ReceiptSettings';
 import { BluetoothModal } from './components/Settings/BluetoothModal';
 import { supabase } from './lib/supabase';
+import { getJakartaDateKey, getShiftCashSummary, shouldAutoCloseShift } from './utils/shift';
 
 // Font stack map applied as a CSS variable
 const FONT_STACKS = {
@@ -46,7 +47,7 @@ const convertInventoryQuantity = (value, fromUnit, toUnit) => {
   const from = getInventoryUnitMeta(fromUnit);
   const to = getInventoryUnitMeta(toUnit);
   const amount = Number(value) || 0;
-  if (from.family !== to.family) return amount;
+  if (from.family !== to.family) return Number.NaN;
   return (amount * from.factor) / to.factor;
 };
 
@@ -58,6 +59,7 @@ const LEGACY_WORKSPACE_KEYS = [
   'selasar_tables',
   'selasar_members',
   'selasar_transactions',
+  'selasar_expenses',
   'selasar_addons',
   'selasar_settings',
   'selasar_shift',
@@ -72,6 +74,7 @@ const DEFAULT_APP_SETTINGS = {
   serviceChargePercent: 5,
   font: 'jakarta',
   onboardingCompleted: false,
+  operationalExpenses: [],
   profile: {
     businessName: '',
     ownerName: '',
@@ -131,6 +134,12 @@ const safeReadJson = (key, fallback) => {
   }
 };
 
+const isUserEditingForm = () => {
+  if (typeof document === 'undefined') return false;
+  const activeElement = document.activeElement;
+  return Boolean(activeElement && ['INPUT', 'TEXTAREA', 'SELECT'].includes(activeElement.tagName));
+};
+
 const isEmptyOrganizationSnapshot = (snapshot = {}) => {
   const lists = [
     snapshot.products,
@@ -172,7 +181,7 @@ export function App() {
 
   // Asisten Kasir AI (Puter.js)
   const [pertanyaanAsisten, setPertanyaanAsisten] = useState('');
-  const [jawabanAsisten, setJawabanAsisten] = useState('');
+  const [, setJawabanAsisten] = useState('');
   const [asistenLoading, setAsistenLoading] = useState(false);
   const [asistenMinimized, setAsistenMinimized] = useState(() => localStorage.getItem('selasar_ai_minimized') === 'true');
   const [riwayatAsisten, setRiwayatAsisten] = useState([]);
@@ -684,6 +693,8 @@ export function App() {
   const authSyncInFlightRef = useRef(null);
   const initialSessionRetryRef = useRef(false);
   const cloudSaveRef = useRef({ inFlight: false, pending: null, retryTimer: null });
+  // Patokan ini tidak berubah ketika aplikasi tetap menyala melewati tengah malam.
+  const appSessionDateRef = useRef(getJakartaDateKey());
 
   // Core App State
   const [products, setProducts] = useState(() => {
@@ -703,6 +714,10 @@ export function App() {
   });
 
   const [transactions, setTransactions] = useState(() => {
+    return [];
+  });
+
+  const [expenses, setExpenses] = useState(() => {
     return [];
   });
 
@@ -731,6 +746,7 @@ export function App() {
     setTables(nextData.restaurant_tables || []);
     setMembers(nextData.members || []);
     setTransactions(nextData.transactions || []);
+    setExpenses(nextData.expenses || nextData.app_settings?.operationalExpenses || []);
     setAddons(nextData.addons || []);
     setAppSettings(normalizeAppSettings(nextData.app_settings));
     setActiveShift(nextData.active_shift || null);
@@ -977,6 +993,7 @@ export function App() {
         setTables(initialSnapshot.restaurant_tables);
         setMembers(initialSnapshot.members);
         setTransactions(initialSnapshot.transactions);
+        setExpenses(initialSnapshot.app_settings.operationalExpenses || []);
         setAddons(initialSnapshot.addons);
         setAppSettings(initialSnapshot.app_settings);
         setActiveShift(initialSnapshot.active_shift);
@@ -1016,14 +1033,14 @@ export function App() {
         members,
         transactions,
         addons,
-        app_settings: appSettings,
+        app_settings: { ...appSettings, operationalExpenses: expenses },
         active_shift: activeShift,
         shift_history: shiftHistory,
         updated_at: new Date().toISOString(),
       });
     }, 250);
     return () => clearTimeout(timeout);
-  }, [activeOrganizationId, cloudReady, products, inventory, tables, members, transactions, addons, appSettings, activeShift, shiftHistory, queueCloudSave]);
+  }, [activeOrganizationId, cloudReady, products, inventory, tables, members, transactions, expenses, addons, appSettings, activeShift, shiftHistory, queueCloudSave]);
 
   useEffect(() => {
     if (!activeOrganizationId || !cloudReady) return;
@@ -1041,13 +1058,14 @@ export function App() {
         table: 'organization_data',
         filter: `organization_id=eq.${activeOrganizationId}`,
       }, ({ new: nextData }) => {
-         const recentlySavedByThisDevice =
-    Date.now() - localCloudWriteAtRef.current < 1500;
-
-  if (recentlySavedByThisDevice) {
-    setSyncStatus('synced');
-    return;
-  }
+        const recentlySavedByThisDevice = Date.now() - localCloudWriteAtRef.current < 1500;
+        if (recentlySavedByThisDevice) {
+          setSyncStatus('synced');
+          return;
+        }
+        if (isUserEditingForm() || cloudSaveRef.current.inFlight || cloudSaveRef.current.pending) return;
+        applyCloudSnapshot(nextData);
+        setSyncStatus('synced');
       })
       .subscribe((status) => {
         setSyncStatus(status === 'SUBSCRIBED' ? 'synced' : status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' ? 'offline' : 'connecting');
@@ -1056,6 +1074,9 @@ export function App() {
     // Refetch after returning online or to a backgrounded tab. This also keeps
     // data current when the Realtime publication has not been enabled yet.
     const refreshSnapshot = async () => {
+      // Jangan timpa draft lokal ketika pengguna masih mengetik. Snapshot
+      // terbaru akan diambil lagi setelah field kehilangan fokus.
+      if (isUserEditingForm()) return;
       if (cloudSaveRef.current.inFlight || cloudSaveRef.current.pending) return;
       const { data, error } = await supabase
         .from('organization_data')
@@ -1113,6 +1134,11 @@ export function App() {
 
   useEffect(() => {
     if (!activeOrganizationId || !cloudReady) return;
+    localStorage.setItem(getWorkspaceStorageKey(activeOrganizationId, 'expenses'), JSON.stringify(expenses));
+  }, [expenses, activeOrganizationId, cloudReady]);
+
+  useEffect(() => {
+    if (!activeOrganizationId || !cloudReady) return;
     localStorage.setItem(getWorkspaceStorageKey(activeOrganizationId, 'addons'), JSON.stringify(addons));
   }, [addons, activeOrganizationId, cloudReady]);
 
@@ -1148,8 +1174,9 @@ export function App() {
         if (key === getWorkspaceStorageKey(activeOrganizationId, 'tables')) setTables(safeReadJson(key, []));
         if (key === getWorkspaceStorageKey(activeOrganizationId, 'members')) setMembers(safeReadJson(key, []));
         if (key === getWorkspaceStorageKey(activeOrganizationId, 'transactions')) setTransactions(safeReadJson(key, []));
+        if (key === getWorkspaceStorageKey(activeOrganizationId, 'expenses')) setExpenses(safeReadJson(key, []));
         if (key === getWorkspaceStorageKey(activeOrganizationId, 'addons')) setAddons(safeReadJson(key, []));
-        if (key === getWorkspaceStorageKey(activeOrganizationId, 'settings')) setAppSettings(normalizeAppSettings(safeReadJson(key, DEFAULT_APP_SETTINGS)));
+        if (key === getWorkspaceStorageKey(activeOrganizationId, 'settings') && !isUserEditingForm()) setAppSettings(normalizeAppSettings(safeReadJson(key, DEFAULT_APP_SETTINGS)));
         if (key === getWorkspaceStorageKey(activeOrganizationId, 'shift')) setActiveShift(safeReadJson(key, null));
         if (key === getWorkspaceStorageKey(activeOrganizationId, 'shift_history')) setShiftHistory(safeReadJson(key, []));
       } catch (err) {
@@ -1965,16 +1992,58 @@ ATURAN:
   };
 
   const handleVoidTransaction = (txId) => {
-    setTransactions(prev => prev.filter(t => t.id !== txId));
+    const transaction = transactions.find(t => t.id === txId);
+    if (!transaction || String(transaction.status || transaction.paymentStatus || '').toLowerCase() === 'void') return;
+
+    setTransactions(prev => prev.map(t => t.id === txId ? {
+      ...t,
+      status: 'void',
+      paymentStatus: 'void',
+      orderStatus: 'cancelled',
+      voidedAt: new Date().toISOString()
+    } : t));
+
+    (transaction.items || []).forEach(cartItem => {
+      (cartItem.ingredients || []).forEach(ingredient => {
+        setInventory(prev => prev.map(item => {
+          if (item.id !== ingredient.id) return item;
+          const inventoryUnit = item.unit || item.satuan || ingredient.unit || 'ml';
+          const restored = convertInventoryQuantity(
+            (Number(ingredient.amount) || 0) * (Number(cartItem.qty ?? cartItem.quantity) || 0),
+            ingredient.unit || inventoryUnit,
+            inventoryUnit
+          );
+          return Number.isFinite(restored) ? { ...item, stock: (Number(item.stock) || 0) + restored } : item;
+        }));
+      });
+    });
+
+    if (transaction.memberId) {
+      setMembers(prev => prev.map(member => {
+        if (member.id !== transaction.memberId) return member;
+        const totalSpent = Math.max(0, (Number(member.totalSpent) || 0) - (Number(transaction.total) || 0));
+        const points = Math.max(0, (Number(member.points) || 0) - Math.floor((Number(transaction.total) || 0) / 10000));
+        const level = totalSpent >= 5000000 ? 'Platinum' : totalSpent >= 3000000 ? 'Gold VIP' : totalSpent >= 1000000 ? 'Silver' : 'Bronze';
+        return { ...member, totalSpent, points, level };
+      }));
+    }
     setTables(prev => prev.map(table => table.currentOrderId === txId
       ? { ...table, status: 'available', currentOrderId: null }
       : table));
   };
 
-  const handleDeductStock = (ingredientId, amountToDeduct) => {
+  const handleDeductStock = (ingredientId, amountToDeduct, sourceUnit) => {
     setInventory(prev => prev.map(item => {
       if (item.id === ingredientId) {
-        return { ...item, stock: Math.max(0, item.stock - amountToDeduct) };
+        const inventoryUnit = item.unit || item.satuan || sourceUnit || 'ml';
+        const convertedAmount = sourceUnit
+          ? convertInventoryQuantity(amountToDeduct, sourceUnit, inventoryUnit)
+          : Number(amountToDeduct);
+        if (!Number.isFinite(convertedAmount) || convertedAmount < 0) {
+          console.warn(`Takaran ${sourceUnit || '-'} tidak kompatibel dengan satuan stok ${inventoryUnit}.`);
+          return item;
+        }
+        return { ...item, stock: Math.max(0, (Number(item.stock) || 0) - convertedAmount) };
       }
       return item;
     }));
@@ -2015,6 +2084,33 @@ ATURAN:
     }
     setActiveShift(null);
   };
+
+  // Hanya rapikan shift yang berasal dari hari sebelum aplikasi dibuka.
+  // Tidak memakai timer, sehingga shift tidak tiba-tiba ditutup saat aplikasi
+  // sedang dipakai dan jam melewati pukul 00.00.
+  useEffect(() => {
+    if (!cloudReady || !activeOrganizationId || !activeShift) return;
+    if (!shouldAutoCloseShift(activeShift, appSessionDateRef.current)) return;
+    const { validTransactions, cashSales, cashExpenses, expectedCash } = getShiftCashSummary(activeShift, transactions, expenses);
+    const closedShift = {
+      ...activeShift,
+      closingTime: new Date().toISOString(),
+      autoClosed: true,
+      closeReason: 'Otomatis ditutup saat aplikasi dibuka pada hari berikutnya',
+      reconciliationStatus: 'belum_dihitung',
+      physicalCash: null,
+      cashDifference: null,
+      cashSales,
+      cashExpenses,
+      expectedCash,
+      transactionCount: validTransactions.length
+    };
+
+    setShiftHistory(previous => previous.some(shift => shift.id === activeShift.id)
+      ? previous
+      : [closedShift, ...previous]);
+    setActiveShift(current => current?.id === activeShift.id ? null : current);
+  }, [activeOrganizationId, activeShift, cloudReady, expenses, transactions]);
 
   const handleResetOrganizationData = () => {
     setProducts([]);
@@ -2204,6 +2300,8 @@ ATURAN:
         {activeTab === 'reports' && currentUserRole === 'owner' && (
           <ReportsScreen
             transactions={transactions}
+            expenses={expenses}
+            setExpenses={setExpenses}
             appSettings={appSettings}
             activeShift={activeShift}
             shiftHistory={shiftHistory}
@@ -2253,7 +2351,7 @@ ATURAN:
         )}
 
         {activeTab === 'shift' && (
-          <ShiftSettings activeShift={activeShift} onOpenShift={setActiveShift} onUpdateShift={setActiveShift} onCloseShift={handleCloseShift} products={products} onToggleProductAvailability={handleToggleProductAvailability} />
+          <ShiftSettings activeShift={activeShift} onOpenShift={setActiveShift} onUpdateShift={setActiveShift} onCloseShift={handleCloseShift} products={products} transactions={transactions} expenses={expenses} onToggleProductAvailability={handleToggleProductAvailability} />
         )}
 
         {activeTab === 'loyalty' && (

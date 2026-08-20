@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import {
-  Package,
   Plus,
   Edit2,
   Trash2,
@@ -13,14 +12,26 @@ import {
 import { formatRupiah } from '../../utils/formatters';
 import { sounds } from '../../utils/audio';
 
+const UNIT_META = {
+  ml: { family: 'volume', factor: 1, defaultPackSize: 1000, defaultPackUnitName: 'Botol' },
+  liter: { family: 'volume', factor: 1000, defaultPackSize: 1, defaultPackUnitName: 'Jerigen' },
+  g: { family: 'weight', factor: 1, defaultPackSize: 1000, defaultPackUnitName: 'Pack' },
+  kg: { family: 'weight', factor: 1000, defaultPackSize: 1, defaultPackUnitName: 'Karung' },
+  pcs: { family: 'count', factor: 1, defaultPackSize: 1, defaultPackUnitName: 'Pcs' },
+  cup: { family: 'count', factor: 1, defaultPackSize: 1, defaultPackUnitName: 'Cup' }
+};
+
+const getUnitMeta = (unit) => UNIT_META[unit] || UNIT_META.ml;
+
+const convertQuantity = (value, fromUnit, toUnit) => {
+  const from = getUnitMeta(fromUnit);
+  const to = getUnitMeta(toUnit);
+  const amount = Number(value) || 0;
+  return from.family === to.family ? (amount * from.factor) / to.factor : amount;
+};
+
 const getDefaultPackSize = (unit) => {
-  if (unit === 'pcs') return 1;
-  if (unit === 'cup') return 1;
-  // Base stock is stored in the selected unit.
-  // For volume: 1 L = 1000 ml.
-  // For weight: 1 kg = 1000 g.
-  if (unit === 'liter') return 1;
-  return 1000;
+  return getUnitMeta(unit).defaultPackSize;
 };
 
 const normalizePackSize = (value, unit) => {
@@ -31,23 +42,8 @@ const normalizePackSize = (value, unit) => {
   return numeric;
 };
 
-const formatUnitValue = (value, unit) => {
-  const numeric = Number(value || 0);
-  if (unit === 'liter' || unit === 'ml' || unit === 'g' || unit === 'pcs' || unit === 'cup') {
-    return numeric.toLocaleString('id-ID', {
-      maximumFractionDigits: 3
-    });
-  }
-  return numeric.toLocaleString('id-ID');
-};
-
 const getDefaultPackUnitName = (unit) => {
-  if (unit === 'ml') return 'Botol';
-  if (unit === 'liter') return 'Jerigen';
-  if (unit === 'g') return 'Pack';
-  if (unit === 'pcs') return 'Pcs';
-  if (unit === 'cup') return 'Cup';
-  return 'Kemasan';
+  return getUnitMeta(unit).defaultPackUnitName;
 };
 
 export const InventoryManager = ({ inventory = [], setInventory }) => {
@@ -98,19 +94,28 @@ export const InventoryManager = ({ inventory = [], setInventory }) => {
   };
 
   const handleUnitChange = (unit) => {
-    setFormData((prev) => ({
-      ...prev,
-      unit,
-      packSize:
-        prev.packSize === 1000 || !prev.packSize
-          ? getDefaultPackSize(unit)
-          : prev.packSize,
-      packUnitName:
-        !prev.packUnitName ||
-        ['Botol', 'Jerigen', 'Pack', 'Pcs', 'Cup', 'Kemasan'].includes(prev.packUnitName)
-          ? getDefaultPackUnitName(unit)
-          : prev.packUnitName
-    }));
+    setFormData((prev) => {
+      const previousMeta = getUnitMeta(prev.unit);
+      const nextMeta = getUnitMeta(unit);
+      const sameFamily = previousMeta.family === nextMeta.family;
+      const usesDefaultPack = Math.abs((Number(prev.packSize) || 0) - previousMeta.defaultPackSize) < 1e-9;
+      return {
+        ...prev,
+        unit,
+        stock: sameFamily ? convertQuantity(prev.stock, prev.unit, unit) : prev.stock,
+        minStock: sameFamily ? convertQuantity(prev.minStock, prev.unit, unit) : prev.minStock,
+        packSize: usesDefaultPack
+          ? nextMeta.defaultPackSize
+          : sameFamily ? convertQuantity(prev.packSize, prev.unit, unit) : prev.packSize,
+        costPerUnit: sameFamily
+          ? (Number(prev.costPerUnit) || 0) * (nextMeta.factor / previousMeta.factor)
+          : prev.costPerUnit,
+        packUnitName:
+          !prev.packUnitName || Object.values(UNIT_META).some((meta) => meta.defaultPackUnitName === prev.packUnitName)
+            ? nextMeta.defaultPackUnitName
+            : prev.packUnitName
+      };
+    });
   };
 
   const handleNumericChange = (field, rawValue, fallback = 0) => {
@@ -187,10 +192,10 @@ export const InventoryManager = ({ inventory = [], setInventory }) => {
     const normalized = {
       ...formData,
       name: formData.name.trim(),
-      stock: Number.isFinite(Number(formData.stock)) ? Number(formData.stock) : 0,
-      minStock: Number.isFinite(Number(formData.minStock)) ? Number(formData.minStock) : 0,
+      stock: Math.max(0, Number.isFinite(Number(formData.stock)) ? Number(formData.stock) : 0),
+      minStock: Math.max(0, Number.isFinite(Number(formData.minStock)) ? Number(formData.minStock) : 0),
       packSize: normalizePackSize(formData.packSize, formData.unit),
-      costPerUnit: Number(formData.costPerUnit) || 0,
+      costPerUnit: Math.max(0, Number(formData.costPerUnit) || 0),
       unit: formData.unit || 'ml',
       packUnitName: formData.packUnitName?.trim() || getDefaultPackUnitName(formData.unit)
     };
@@ -466,6 +471,7 @@ export const InventoryManager = ({ inventory = [], setInventory }) => {
                   <input
                     type="number"
                     min="1"
+                    step="1"
                     className="apple-input"
                     style={{
                       fontSize: '18px',
@@ -684,6 +690,8 @@ export const InventoryManager = ({ inventory = [], setInventory }) => {
 
                   <input
                     type="number"
+                    min="0"
+                    step="0.001"
                     className="apple-input"
                     value={formData.stock}
                     onFocus={selectZeroOnFocus}
@@ -715,6 +723,7 @@ export const InventoryManager = ({ inventory = [], setInventory }) => {
                     <option value="ml">Mililiter (ml)</option>
                     <option value="liter">Liter (L)</option>
                     <option value="g">Gram (g)</option>
+                    <option value="kg">Kilogram (kg)</option>
                     <option value="pcs">Pieces (pcs)</option>
                     <option value="cup">Cup</option>
                   </select>
@@ -743,6 +752,8 @@ export const InventoryManager = ({ inventory = [], setInventory }) => {
 
                   <input
                     type="number"
+                    min="0.001"
+                    step="0.001"
                     className="apple-input"
                     value={formData.packSize}
                     onFocus={selectZeroOnFocus}
@@ -806,6 +817,8 @@ export const InventoryManager = ({ inventory = [], setInventory }) => {
 
                   <input
                     type="number"
+                    min="0"
+                    step="0.001"
                     className="apple-input"
                     value={formData.minStock}
                     onFocus={selectZeroOnFocus}
@@ -829,6 +842,8 @@ export const InventoryManager = ({ inventory = [], setInventory }) => {
 
                   <input
                     type="number"
+                    min="0"
+                    step="0.01"
                     className="apple-input"
                     value={formData.costPerUnit}
                     onFocus={selectZeroOnFocus}
@@ -836,6 +851,9 @@ export const InventoryManager = ({ inventory = [], setInventory }) => {
                       handleNumericChange('costPerUnit', event.target.value, 0)
                     }
                   />
+                  <small style={{ color: 'var(--text-muted)', fontSize: '11px' }}>
+                    Contoh susu Rp25.000 per 1.000 ml: isi Rp25 per ml.
+                  </small>
                 </div>
               </div>
             </div>

@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Package, Plus, Edit2, Trash2, Save, X, ShoppingBag, PlusCircle, CheckCircle2 } from 'lucide-react';
+import { Plus, Edit2, Trash2, Save, X, ShoppingBag, PlusCircle, CheckCircle2 } from 'lucide-react';
 import { formatRupiah } from '../../utils/formatters';
 import { sounds } from '../../utils/audio';
 

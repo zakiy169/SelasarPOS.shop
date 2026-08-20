@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { X, Plus, Minus, Check } from 'lucide-react';
 import { formatRupiah } from '../../utils/formatters';
 import { sounds } from '../../utils/audio';
+import { ProductImage } from '../ProductImage';
 
 export const ProductModal = ({ product, onClose, onAddToCart, addons = [] }) => {
   const [variant, setVariant] = useState('Iced (Dingin)');
@@ -22,16 +23,16 @@ export const ProductModal = ({ product, onClose, onAddToCart, addons = [] }) => 
 
   // Find the selected milk addon price
   const selectedMilkAddon = milkAddons.find(a => a.name === milk);
-  const milkPrice = selectedMilkAddon ? selectedMilkAddon.price : 0;
+  const milkPrice = selectedMilkAddon ? Number(selectedMilkAddon.price) || 0 : 0;
 
   // Sum of extra add-ons
   const extrasTotalPrice = selectedExtras.reduce((sum, id) => {
     const a = extraAddons.find(x => x.id === id);
-    return sum + (a ? a.price : 0);
+    return sum + (a ? Number(a.price) || 0 : 0);
   }, 0);
 
   const addonPrice = milkPrice + extrasTotalPrice;
-  const itemUnitPrice = product.price + addonPrice;
+  const itemUnitPrice = (Number(product.price) || 0) + addonPrice;
   const totalPrice = itemUnitPrice * quantity;
 
   const toggleExtra = (id) => {
@@ -47,6 +48,7 @@ export const ProductModal = ({ product, onClose, onAddToCart, addons = [] }) => 
       productId: product.id,
       name: product.name,
       basePrice: product.price,
+      costPrice: Number(product.costPrice) || 0,
       itemUnitPrice,
       totalPrice,
       qty: quantity,
@@ -64,33 +66,13 @@ export const ProductModal = ({ product, onClose, onAddToCart, addons = [] }) => 
     onClose();
   };
 
-  // ── Shared option button style ──
-  const optBtn = (active, accentVar = '--apple-blue') => ({
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: '10px 14px',
-    borderRadius: '10px',
-    border: `1.5px solid ${active ? `var(${accentVar})` : 'var(--border-color)'}`,
-    background: active ? `rgba(var(--accent-rgb, 2,132,199), 0.10)` : 'var(--bg-card)',
-    color: 'var(--text-main)',
-    fontSize: '13px',
-    fontWeight: '600',
-    cursor: 'pointer',
-    transition: 'all 0.15s',
-  });
-
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-card" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '480px' }}>
         {/* ── Header ── */}
         <div className="modal-header">
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <img
-              src={product.image}
-              alt={product.name}
-              style={{ width: '48px', height: '48px', borderRadius: '10px', objectFit: 'cover' }}
-            />
+            <ProductImage src={product.image} alt={product.name} name={product.name} category={product.category} className="product-modal-thumb" />
             <div>
               <h3 style={{ fontSize: '16px', fontWeight: '800' }}>{product.name}</h3>
               <p style={{ fontSize: '13px', color: 'var(--selasar-red)', fontWeight: '700' }}>{formatRupiah(product.price)}</p>

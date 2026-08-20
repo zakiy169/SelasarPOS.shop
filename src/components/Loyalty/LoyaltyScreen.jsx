@@ -3,7 +3,7 @@ import { Award, Edit3, Plus, Search, X } from 'lucide-react';
 import { formatRupiah } from '../../utils/formatters';
 import { sounds } from '../../utils/audio';
 
-const EMPTY_MEMBER = { name: '', phone: '', level: 'Bronze', points: 50, totalSpent: 0, joinedDate: new Date().toISOString().slice(0, 10) };
+const EMPTY_MEMBER = { name: '', phone: '', level: 'Bronze', points: '', totalSpent: '', joinedDate: new Date().toISOString().slice(0, 10) };
 const LEVELS = ['Bronze', 'Silver', 'Gold VIP', 'Platinum'];
 
 export const LoyaltyScreen = ({ members = [], onAddMember, onUpdateMember }) => {

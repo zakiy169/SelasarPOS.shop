@@ -54,6 +54,11 @@ export const Header = ({
     return () => window.removeEventListener('selasar_bt_status_change', syncBtStatus);
   }, []);
 
+  useEffect(() => {
+    setMobileNavOpen(false);
+    setProfileOpen(false);
+  }, [activeTab]);
+
   const handleTabClick = (tabId) => {
     sounds.playBeep();
     setActiveTab(tabId);
@@ -64,21 +69,29 @@ export const Header = ({
 
   // Navigation tabs configuration
   const allTabs = [
-    { id: 'pos', label: 'Kasir', icon: ShoppingCart, ownerOnly: false },
-    { id: 'kds', label: 'Dapur', icon: ChefHat, ownerOnly: false },
-    { id: 'tables', label: 'Meja', icon: LayoutGrid, ownerOnly: false },
-    { id: 'loyalty', label: 'Member', icon: Users, ownerOnly: false },
-    { id: 'shift', label: 'Shift', icon: Clock, ownerOnly: false },
-    { id: 'reports', label: 'Laporan', icon: BarChart3, ownerOnly: true },
-    { id: 'menu_manager', label: 'Menu', icon: Package, ownerOnly: true },
-    { id: 'inventory', label: 'Stok', icon: Package, ownerOnly: true },
-    { id: 'settings', label: 'Settings', icon: Settings, ownerOnly: true },
-    { id: 'receipt_settings', label: 'Struk', icon: Printer, ownerOnly: true }
+    { id: 'pos', label: 'Kasir', icon: ShoppingCart, group: 'Transaksi', ownerOnly: false },
+    { id: 'kds', label: 'Dapur', icon: ChefHat, group: 'Transaksi', ownerOnly: false },
+    { id: 'tables', label: 'Meja', icon: LayoutGrid, group: 'Transaksi', ownerOnly: false },
+    { id: 'shift', label: 'Shift', icon: Clock, group: 'Operasional', ownerOnly: false },
+    { id: 'menu_manager', label: 'Produk', icon: Package, group: 'Operasional', ownerOnly: true },
+    { id: 'inventory', label: 'Stok', icon: Package, group: 'Operasional', ownerOnly: true },
+    { id: 'loyalty', label: 'Member', icon: Users, group: 'Pelanggan & data', ownerOnly: false },
+    { id: 'reports', label: 'Laporan', icon: BarChart3, group: 'Keuangan', ownerOnly: true },
+    { id: 'receipt_settings', label: 'Struk', icon: Printer, group: 'Perangkat & sistem', ownerOnly: true },
+    { id: 'settings', label: 'Pengaturan', icon: Settings, group: 'Perangkat & sistem', ownerOnly: true }
   ];
 
   const visibleTabs = allTabs.filter(t => !t.ownerOnly || isOwner);
+  const groupOrder = ['Transaksi', 'Operasional', 'Pelanggan & data', 'Keuangan', 'Perangkat & sistem'];
+  const navigationGroups = groupOrder
+    .map(label => ({ label, tabs: visibleTabs.filter(tab => tab.group === label) }))
+    .filter(group => group.tabs.length);
 
-  const primaryMobileTabs = visibleTabs.filter(tab => ['pos', 'kds', 'tables', 'loyalty'].includes(tab.id));
+  const primaryIds = isOwner ? ['pos', 'kds', 'tables', 'reports'] : ['pos', 'kds', 'tables', 'loyalty'];
+  const primaryMobileTabs = primaryIds.map(id => visibleTabs.find(tab => tab.id === id)).filter(Boolean);
+  const secondaryActiveTab = visibleTabs.find(tab => !primaryMobileTabs.some(primary => primary.id === tab.id) && tab.id === activeTab);
+  const moreIsActive = mobileNavOpen || Boolean(secondaryActiveTab);
+  const activeTabInfo = visibleTabs.find(tab => tab.id === activeTab) || visibleTabs[0];
 
   return (
     <>
@@ -93,35 +106,10 @@ export const Header = ({
         >
           <SelasarLogo size="sm" variant={theme} />
         </div>
-
-        {/* Clean Center Navigation */}
-        <nav className={`nav-tabs ${mobileNavOpen ? 'is-open' : ''}`} aria-label="Navigasi utama">
-          {visibleTabs.map((tab) => {
-            const Icon = tab.icon;
-            const isActive = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                className={`nav-btn ${isActive ? 'active' : ''}`}
-                onClick={() => handleTabClick(tab.id)}
-                title={tab.label}
-                aria-label={tab.label}
-              >
-                <Icon size={15} />
-                <span>{tab.label}</span>
-              </button>
-            );
-          })}
-          <button type="button" className="mobile-only-nav-action" onClick={() => { toggleTheme(); setMobileNavOpen(false); }}>
-            <Palette size={15} /><span>Ganti tema</span>
-          </button>
-          <button type="button" className="mobile-only-nav-action" onClick={() => { onOpenBluetoothModal?.(); setMobileNavOpen(false); }}>
-            <Bluetooth size={15} /><span>Printer Bluetooth</span>
-          </button>
-          <button type="button" className="mobile-only-nav-action mobile-logout-nav" onClick={onLogout}>
-            <LogOut size={15} /><span>Keluar dari akun</span>
-          </button>
-        </nav>
+        <div className="header-page-context">
+          <span>{activeTabInfo?.group || 'Workspace'}</span>
+          <strong>{activeTabInfo?.label || 'Kasir'}</strong>
+        </div>
       </div>
 
       <div className="header-right">
@@ -227,8 +215,49 @@ export const Header = ({
       </div>
     </header>
 
-    {/* Kept separate from the desktop header so the main actions stay reachable
-        with one thumb, while every existing menu remains in the More sheet. */}
+    <aside className="desktop-workspace-sidebar" aria-label="Navigasi workspace">
+      <div className="desktop-sidebar-scroll">
+        {navigationGroups.map(group => <section className="desktop-nav-group" key={group.label}>
+          <p>{group.label}</p>
+          {group.tabs.map(tab => {
+            const Icon = tab.icon;
+            const isActive = activeTab === tab.id;
+            return <button key={tab.id} type="button" className={isActive ? 'active' : ''} onClick={() => handleTabClick(tab.id)} aria-label={tab.label} aria-current={isActive ? 'page' : undefined}>
+              <span><Icon size={18} /></span><b>{tab.label}</b>
+            </button>;
+          })}
+        </section>)}
+      </div>
+      <div className="desktop-sidebar-footer"><button type="button" onClick={onOpenBluetoothModal} title="Printer Bluetooth"><Bluetooth size={18} /></button><button type="button" onClick={toggleTheme} title="Ganti tema"><Palette size={18} /></button></div>
+    </aside>
+
+    {mobileNavOpen && <div className="mobile-workspace-overlay" onMouseDown={event => event.target === event.currentTarget && setMobileNavOpen(false)}>
+      <nav className="mobile-workspace-sheet" aria-label="Menu workspace">
+        <div className="mobile-sheet-handle" />
+        <div className="nav-sheet-heading"><div><strong>Menu workspace</strong><span>Semua fitur aplikasi</span></div><button type="button" onClick={() => setMobileNavOpen(false)} aria-label="Tutup menu"><X size={18} /></button></div>
+        <div className="mobile-sheet-groups">
+          {navigationGroups.map(group => <section className="nav-group" key={group.label}>
+            <p className="nav-group-label">{group.label}</p>
+            <div className="nav-group-items">{group.tabs.map(tab => {
+              const Icon = tab.icon;
+              const isActive = activeTab === tab.id;
+              return <button key={tab.id} type="button" className={`nav-btn ${isActive ? 'active' : ''}`} onClick={() => handleTabClick(tab.id)} aria-label={tab.label} aria-current={isActive ? 'page' : undefined}>
+                <span className="nav-icon"><Icon size={17} /></span><span>{tab.label}</span>
+              </button>;
+            })}</div>
+          </section>)}
+          <section className="nav-group nav-utility-group">
+            <p className="nav-group-label">Akun & perangkat</p>
+            <div className="nav-group-items">
+              <button type="button" className="mobile-only-nav-action" onClick={() => { toggleTheme(); setMobileNavOpen(false); }}><span className="nav-icon"><Palette size={16} /></span><span>Ganti tema</span></button>
+              <button type="button" className="mobile-only-nav-action" onClick={() => { onOpenBluetoothModal?.(); setMobileNavOpen(false); }}><span className="nav-icon"><Bluetooth size={16} /></span><span>Printer Bluetooth</span></button>
+              <button type="button" className="mobile-only-nav-action mobile-logout-nav" onClick={onLogout}><span className="nav-icon"><LogOut size={16} /></span><span>Keluar akun</span></button>
+            </div>
+          </section>
+        </div>
+      </nav>
+    </div>}
+
     <nav className="mobile-bottom-nav" aria-label="Navigasi cepat">
       {primaryMobileTabs.map((tab) => {
         const Icon = tab.icon;
@@ -239,6 +268,7 @@ export const Header = ({
             className={activeTab === tab.id ? 'active' : ''}
             onClick={() => handleTabClick(tab.id)}
             aria-label={tab.label}
+            aria-current={activeTab === tab.id ? 'page' : undefined}
           >
             <Icon size={19} strokeWidth={activeTab === tab.id ? 2.5 : 2} />
             <span>{tab.label}</span>
@@ -247,13 +277,14 @@ export const Header = ({
       })}
       <button
         type="button"
-        className={mobileNavOpen ? 'active' : ''}
+        className={moreIsActive ? 'active' : ''}
         onClick={() => setMobileNavOpen(open => !open)}
-        aria-label="Menu lainnya"
+        aria-label={secondaryActiveTab ? `Menu lainnya, halaman aktif ${secondaryActiveTab.label}` : 'Menu lainnya'}
         aria-expanded={mobileNavOpen}
+        aria-current={secondaryActiveTab ? 'page' : undefined}
       >
         <Menu size={20} />
-        <span>Lainnya</span>
+        <span>{secondaryActiveTab?.label || 'Lainnya'}</span>
       </button>
     </nav>
     </>

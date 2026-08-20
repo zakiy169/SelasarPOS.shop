@@ -10,7 +10,8 @@ import {
   Minus, 
   Lock,
   X,
-  Bluetooth
+  Bluetooth,
+  Sparkles
 } from 'lucide-react';
 import { formatRupiah } from '../../utils/formatters';
 import { ProductModal } from './ProductModal';
@@ -18,6 +19,20 @@ import { PaymentModal } from './PaymentModal';
 import { ReceiptModal } from './ReceiptModal';
 import { sounds } from '../../utils/audio';
 import { bluetoothPrinter } from '../../utils/bluetoothPrinter';
+import { ProductImage } from '../ProductImage';
+
+const STOCK_UNIT_META = {
+  ml: { family: 'volume', factor: 1 }, liter: { family: 'volume', factor: 1000 },
+  g: { family: 'weight', factor: 1 }, gr: { family: 'weight', factor: 1 }, kg: { family: 'weight', factor: 1000 },
+  pcs: { family: 'count', factor: 1 }, cup: { family: 'count', factor: 1 }
+};
+
+const convertStockAmount = (amount, fromUnit, toUnit) => {
+  const from = STOCK_UNIT_META[String(fromUnit || '').toLowerCase()];
+  const to = STOCK_UNIT_META[String(toUnit || '').toLowerCase()];
+  if (!from || !to || from.family !== to.family) return Number.NaN;
+  return ((Number(amount) || 0) * from.factor) / to.factor;
+};
 
 export const PosScreen = ({ 
   products, 
@@ -103,8 +118,11 @@ export const PosScreen = ({
 
       if (existingIdx > -1) {
         const updated = [...prev];
-        updated[existingIdx].qty += configuredItem.qty;
-        updated[existingIdx].totalPrice += configuredItem.totalPrice;
+        updated[existingIdx] = {
+          ...updated[existingIdx],
+          qty: (Number(updated[existingIdx].qty) || 0) + (Number(configuredItem.qty) || 0),
+          totalPrice: (Number(updated[existingIdx].totalPrice) || 0) + (Number(configuredItem.totalPrice) || 0)
+        };
         return updated;
       }
       return [...prev, configuredItem];
@@ -131,16 +149,61 @@ export const PosScreen = ({
   };
 
   // Calculations using dynamic appSettings
-  const subtotal = cartItems.reduce((sum, item) => sum + item.totalPrice, 0);
-  const taxPercent = appSettings?.taxPercent || 0;
-  const serviceChargePercent = appSettings?.serviceChargePercent || 0;
+  const subtotal = cartItems.reduce((sum, item) => sum + (Number(item.totalPrice) || 0), 0);
+  const taxPercent = Math.min(100, Math.max(0, Number(appSettings?.taxPercent) || 0));
+  const serviceChargePercent = Math.min(100, Math.max(0, Number(appSettings?.serviceChargePercent) || 0));
   
   const tax = Math.round(subtotal * (taxPercent / 100));
   const serviceCharge = customerType === 'Dine-In' ? Math.round(subtotal * (serviceChargePercent / 100)) : 0;
   const discount = appliedVoucher ? appliedVoucher.discount : 0;
   const grandTotal = Math.max(0, subtotal + tax + serviceCharge - discount);
 
+  const getStockIssues = () => {
+    const requiredByIngredient = new Map();
+    cartItems.forEach((cartItem) => {
+      (cartItem.ingredients || []).forEach((ingredient) => {
+        const inventoryItem = inventory.find((item) => item.id === ingredient.id);
+        if (!inventoryItem) {
+          requiredByIngredient.set(ingredient.id, { name: ingredient.name || 'Bahan', issue: 'tidak ditemukan di stok' });
+          return;
+        }
+        const converted = convertStockAmount(
+          (Number(ingredient.amount) || 0) * (Number(cartItem.qty) || 0),
+          ingredient.unit || inventoryItem.unit,
+          inventoryItem.unit
+        );
+        if (!Number.isFinite(converted)) {
+          requiredByIngredient.set(ingredient.id, { name: inventoryItem.name, issue: `satuan resep ${ingredient.unit || '-'} tidak cocok dengan stok ${inventoryItem.unit}` });
+          return;
+        }
+        const previous = requiredByIngredient.get(ingredient.id) || { name: inventoryItem.name, required: 0, stock: Number(inventoryItem.stock) || 0, unit: inventoryItem.unit };
+        requiredByIngredient.set(ingredient.id, { ...previous, required: (previous.required || 0) + converted });
+      });
+    });
+    return [...requiredByIngredient.values()].filter((item) => item.issue || item.required > item.stock + 1e-9);
+  };
+
+  const handleStartPayment = () => {
+    const issues = getStockIssues();
+    if (issues.length) {
+      const detail = issues.map((item) => item.issue
+        ? `• ${item.name}: ${item.issue}`
+        : `• ${item.name}: butuh ${item.required.toLocaleString('id-ID')} ${item.unit}, tersedia ${item.stock.toLocaleString('id-ID')} ${item.unit}`
+      ).join('\n');
+      sounds.playError();
+      alert(`Stok bahan belum mencukupi:\n\n${detail}`);
+      return;
+    }
+    sounds.playBeep();
+    setShowPaymentModal(true);
+  };
+
   const handlePaymentSuccess = (paymentDetails) => {
+    if (getStockIssues().length) {
+      sounds.playError();
+      alert('Stok berubah dan sekarang tidak mencukupi. Pembayaran dibatalkan agar stok tidak menjadi salah.');
+      return;
+    }
     const newTx = {
       id: `SLSR-TX-${Date.now()}`,
       receiptNumber: `SLSR-${Date.now().toString().slice(-6)}`,
@@ -156,18 +219,21 @@ export const PosScreen = ({
       discount: paymentDetails.discount || discount,
       total: paymentDetails.finalTotal,
       paymentMethod: paymentDetails.paymentMethod,
+      bankName: paymentDetails.bankName,
+      ewalletName: paymentDetails.ewalletName,
       cashReceived: paymentDetails.cashReceived,
       cashChange: paymentDetails.cashChange,
       paymentStatus: 'paid',
       orderStatus: 'pending',
-      cashierName: activeShift ? activeShift.name : 'Barista Selasar'
+      cashierName: activeShift ? activeShift.name : 'Barista Selasar',
+      shiftId: activeShift?.id || null
     };
 
     // Deduct raw ingredient stocks automatically!
     cartItems.forEach(cartItem => {
       if (cartItem.ingredients) {
         cartItem.ingredients.forEach(ing => {
-          onDeductStock(ing.id, ing.amount * cartItem.qty);
+          onDeductStock(ing.id, ing.amount * cartItem.qty, ing.unit);
         });
       }
     });
@@ -198,6 +264,11 @@ export const PosScreen = ({
 
       {/* Left Column: Product Catalog */}
       <div className="pos-catalog-section" style={{ filter: !activeShift ? 'blur(10px)' : 'none', pointerEvents: !activeShift ? 'none' : 'auto' }}>
+
+        <header className="pos-workspace-hero">
+          <div><span><Sparkles size={14} /> Workspace kasir</span><h2>Pilih menu, buat pesanan.</h2><p>Katalog, ketersediaan produk, pelanggan, dan pembayaran dalam satu alur cepat.</p></div>
+          <aside><small>Shift aktif</small><strong>{activeShift?.shiftType || activeShift?.name || 'Belum dibuka'}</strong><span>{activeShift?.baristaName || activeShift?.name || 'Buka shift untuk mulai'}</span></aside>
+        </header>
 
         <div className="pos-filter-bar">
           <div className="category-pills">
@@ -257,7 +328,7 @@ export const PosScreen = ({
               style={{ opacity: product.isAvailable ? 1 : 0.5 }}
             >
               <div className="product-img-wrapper">
-                <img src={product.image} alt={product.name} className="product-img" />
+                <ProductImage src={product.image} alt={product.name} name={product.name} category={product.category} className="product-img" />
                 <span className="product-badge-cat">{product.category}</span>
                 {!product.isAvailable && (
                   <div style={{
@@ -465,7 +536,7 @@ export const PosScreen = ({
           <button 
             className="checkout-btn" 
             disabled={cartItems.length === 0 || !activeShift || (customerType === 'Dine-In' && !selectedTable)}
-            onClick={() => { sounds.playBeep(); setShowPaymentModal(true); }}
+            onClick={handleStartPayment}
           >
             <span>{!activeShift ? 'Shift Ditutup' : `Bayar • ${formatRupiah(grandTotal)}`}</span>
           </button>

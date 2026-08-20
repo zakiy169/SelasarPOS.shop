@@ -14,11 +14,11 @@ class BluetoothPrinterManager {
   }
 
   isSupported() {
-    return typeof window !== 'undefined' && 'bluetooth' in navigator;
+    return typeof window !== 'undefined' && Boolean(window.navigator) && 'bluetooth' in window.navigator;
   }
 
   isSerialSupported() {
-    return typeof window !== 'undefined' && 'serial' in navigator;
+    return typeof window !== 'undefined' && Boolean(window.navigator) && 'serial' in window.navigator;
   }
 
   notifyStatus() {
@@ -110,12 +110,12 @@ class BluetoothPrinterManager {
 
   async scanAndConnectSerial() {
     if (!this.isSerialSupported()) {
-      throw new Error('Browser ini tidak mendukung koneksi Bluetooth klasik/Serial. Gunakan Chrome/Edge desktop atau printer BLE.');
+      throw new Error('Browser ini tidak mendukung pemilih port COM/SPP. Buka aplikasi lewat Chrome atau Edge desktop, lalu pasangkan printer lebih dulu dari pengaturan Bluetooth perangkat.');
     }
 
     // Printer thermal Bluetooth klasik biasanya muncul sebagai port COM setelah
     // dipasangkan di pengaturan Bluetooth OS.
-    const port = await navigator.serial.requestPort();
+    const port = await window.navigator.serial.requestPort();
     await port.open({ baudRate: 9600 });
     this.serialPort = port;
     this.serialWriter = port.writable?.getWriter();
@@ -136,14 +136,14 @@ class BluetoothPrinterManager {
 
   async disconnect() {
     if (this.device && this.device.gatt && this.device.gatt.connected) {
-      try { this.device.gatt.disconnect(); } catch (e) {}
+      try { this.device.gatt.disconnect(); } catch {}
     }
     if (this.serialWriter) {
-      try { await this.serialWriter.close(); } catch (e) {}
-      try { this.serialWriter.releaseLock(); } catch (e) {}
+      try { await this.serialWriter.close(); } catch {}
+      try { this.serialWriter.releaseLock(); } catch {}
     }
     if (this.serialPort) {
-      try { await this.serialPort.close(); } catch (e) {}
+      try { await this.serialPort.close(); } catch {}
     }
     this.isConnected = false;
     this.deviceName = '';
@@ -196,29 +196,45 @@ class BluetoothPrinterManager {
     const is80mm = appSettings.printerWidth === '80mm';
     const width = is80mm ? 48 : 32; // Line width in chars
     const divider = '-'.repeat(width) + '\n';
-    const normalizeText = (text) => String(text || '').replace(/\u00a0/g, ' ');
-    const centerLine = (text) => {
-      const value = normalizeText(text).slice(0, width);
+    const normalizeText = (text) => String(text || '').replace(/\u00a0/g, ' ').replace(/[\t ]+/g, ' ').trim();
+    const wrapToLines = (text, maxLength) => {
+      const paragraphs = String(text || '').split(/\r?\n/);
+      const lines = [];
+      paragraphs.forEach(paragraph => {
+        const words = normalizeText(paragraph).split(' ').filter(Boolean);
+        let current = '';
+        words.forEach(word => {
+          const pieces = [];
+          for (let index = 0; index < word.length; index += maxLength) pieces.push(word.slice(index, index + maxLength));
+          pieces.forEach(piece => {
+            const candidate = current ? `${current} ${piece}` : piece;
+            if (candidate.length <= maxLength) current = candidate;
+            else {
+              if (current) lines.push(current);
+              current = piece;
+            }
+          });
+        });
+        if (current) lines.push(current);
+        else if (!words.length) lines.push('');
+      });
+      return lines.length ? lines : [''];
+    };
+    const centerLine = (text) => wrapToLines(text, width).map(value => {
       const leftPad = Math.max(0, Math.floor((width - value.length) / 2));
-      return ' '.repeat(leftPad) + value + '\n';
-    };
-    const wrapLine = (text, indent = '') => {
-      const value = normalizeText(text);
-      const maxLength = Math.max(1, width - indent.length);
-      const chunks = [];
-      for (let index = 0; index < value.length; index += maxLength) {
-        chunks.push(indent + value.slice(index, index + maxLength));
-      }
-      return (chunks.length ? chunks : [indent]).join('\n') + '\n';
-    };
+      return `${' '.repeat(leftPad)}${value}`;
+    }).join('\n') + '\n';
+    const wrapLine = (text, indent = '') => wrapToLines(text, Math.max(1, width - indent.length)).map(line => indent + line).join('\n') + '\n';
     const padReceiptLine = (left, right) => {
       const leftStr = normalizeText(left);
       const rightStr = normalizeText(right);
-      const spaceNeeded = width - leftStr.length - rightStr.length;
-      if (spaceNeeded <= 0) {
-        return leftStr.substring(0, Math.max(0, width - rightStr.length - 1)) + ' ' + rightStr + '\n';
-      }
-      return leftStr + ' '.repeat(spaceNeeded) + rightStr + '\n';
+      if (!rightStr) return wrapLine(leftStr);
+      if (!leftStr) return `${rightStr.padStart(width)}\n`;
+      const availableLeft = Math.max(8, width - rightStr.length - 1);
+      const leftLines = wrapToLines(leftStr, availableLeft);
+      const first = leftLines.shift() || '';
+      const firstRow = `${first}${' '.repeat(Math.max(1, width - first.length - rightStr.length))}${rightStr}`;
+      return [firstRow, ...leftLines].join('\n') + '\n';
     };
 
     let receiptOutput = '\x1B\x40';

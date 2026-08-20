@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { AlertCircle, ArrowUpRight, BarChart3, Cloud, Coffee, Gauge, LockKeyhole, ShieldCheck, Sparkles, Users } from 'lucide-react';
+import { AlertCircle, ArrowRight, BarChart3, CheckCircle2, ChefHat, Cloud, Coffee, LayoutGrid, ReceiptText, ShieldCheck, Sparkles, Users } from 'lucide-react';
 import { SelasarLogo } from '../SelasarLogo';
 import { sounds } from '../../utils/audio';
 
@@ -22,127 +22,62 @@ export const LoginScreen = ({ onGoogleLogin }) => {
     }
   };
 
-  return (
-    <div className="login-screen login-welcome macos-login">
-      <div className="macos-wallpaper" aria-hidden="true"><div className="macos-wallpaper-orb orb-blue" /><div className="macos-wallpaper-orb orb-sky" /><div className="macos-wallpaper-orb orb-lilac" /><div className="macos-wallpaper-grain" /></div>
+  return <div className="login-screen concept-login">
+    <div className="concept-auth-bg" aria-hidden="true"><i /><i /><i /><i /></div>
+    <header className="concept-login-header">
+      <SelasarLogo size="md" variant="light" />
+      <span><i /> Sistem siap digunakan</span>
+    </header>
 
-      <header className="macos-menubar">
-        <div className="macos-menu-left"><span className="apple-mark">●</span><strong>Selasar</strong><span>File</span><span>Edit</span><span>View</span><span>Window</span><span>Help</span></div>
-        <div className="macos-menu-right"><span className="menu-signal">●●●</span><span>Wi-Fi</span><span>{new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}</span></div>
-      </header>
-
-      <main className="macos-login-stage">
-        <section className="macos-login-window" aria-label="Jendela login Selasar POS">
-          <div className="macos-titlebar">
-            <div className="traffic-lights"><i /><i /><i /></div>
-            <span>Selasar POS</span>
-            <div className="titlebar-spacer" />
+    <main className="concept-login-main">
+      <section className="concept-login-hero">
+        <div className="concept-login-copy">
+          <span className="concept-eyebrow"><Sparkles size={14} /> POS yang terasa ringan</span>
+          <h1>Kelola kedai dalam satu ruang kerja yang <em>lebih tenang.</em></h1>
+          <p>Kasir, meja, dapur, stok, member, shift, dan laporan disusun untuk kerja harian yang cepat tanpa tampilan yang ramai.</p>
+          <div className="concept-benefits">
+            <span><CheckCircle2 size={15} /> Semua fitur dalam satu akun</span>
+            <span><CheckCircle2 size={15} /> Sinkron antar perangkat</span>
+            <span><CheckCircle2 size={15} /> Akses Owner dan Kasir</span>
           </div>
-          <div className="macos-window-content">
-            <aside className="macos-login-sidebar">
-              <div className="macos-sidebar-brand"><SelasarLogo size="md" variant="light" /></div>
-              <div className="macos-sidebar-copy">
-                <p className="macos-overline">KEDAI KOPI SELASAR</p>
-                <h1>Ruang kerja yang terasa ringan.</h1>
-                <p>Semua yang dibutuhkan kedai untuk melayani, mengatur, dan tumbuh.</p>
-              </div>
-              <div className="macos-sidebar-status"><span /> Sistem siap digunakan</div>
-            </aside>
-
-            <div className="macos-login-panel">
-              <div className="macos-login-panel-inner">
-                <div className="macos-login-icon"><LockKeyhole size={23} /></div>
-                <p className="macos-overline">SELASAR WORKSPACE</p>
-                <h2>Masuk untuk memulai</h2>
-                <p className="macos-login-description">Gunakan akun Google Anda untuk mengakses workspace toko.</p>
-                {error && <div className="login-error"><AlertCircle size={14} /> {error}</div>}
-                <button type="button" className="macos-google-button" onClick={handleGoogleLogin} disabled={isLoading}>
-                  <GoogleMark /><span>{isLoading ? 'Menghubungkan akun...' : 'Lanjutkan dengan Google'}</span><ArrowUpRight size={16} />
-                </button>
-                <div className="macos-login-rule"><span /> atau <span /></div>
-                <div className="macos-login-note"><ShieldCheck size={14} /><span>Setelah login, PIN Owner atau Pegawai diperlukan untuk membuka aplikasi.</span></div>
-              </div>
-              <p className="macos-panel-footer">Dengan masuk, data toko akan tersinkron aman di cloud.</p>
-            </div>
-          </div>
-        </section>
-
-        <div className="macos-login-highlights">
-          <span><Coffee size={14} /> Kasir lebih cepat</span><span><Cloud size={14} /> Cloud lintas perangkat</span><span><BarChart3 size={14} /> Laporan lebih jelas</span>
+          {error && <div className="login-error"><AlertCircle size={15} /> {error}</div>}
+          <button type="button" className="concept-google-button" onClick={handleGoogleLogin} disabled={isLoading}>
+            <GoogleMark /><span>{isLoading ? 'Menghubungkan akun...' : 'Mulai dengan Google'}</span><ArrowRight size={18} />
+          </button>
+          <p className="concept-login-security"><ShieldCheck size={14} /> Login dilanjutkan dengan verifikasi PIN Owner atau Kasir.</p>
         </div>
 
-        <section className="macos-login-story" aria-label="Tentang Selasar POS">
-          <div className="macos-story-header">
-            <p className="macos-overline">TENTANG APLIKASI</p>
-            <h2>Selasar POS dibuat untuk kerja harian yang rapi, cepat, dan tetap terasa premium.</h2>
-            <p>
-              Ini bukan sekadar layar kasir. Selasar dirancang sebagai workspace operasional untuk kedai kopi dan usaha F&B,
-              dengan alur login yang aman, data cloud per organisasi, dan tampilan yang tetap tenang saat dipakai setiap hari.
-            </p>
-          </div>
+        <div className="concept-app-preview" aria-label="Pratinjau Selasar POS">
+          <article className="preview-phone preview-phone-left">
+            <div className="preview-top"><Coffee size={17} /><span>Kasir</span><i /></div>
+            <strong>Selamat datang!</strong><small>Siap menerima pesanan hari ini.</small>
+            <div className="preview-search">Cari menu...</div>
+            <div className="preview-product-grid"><span>Latte<b>Rp 18k</b></span><span>V60<b>Rp 15k</b></span><span>Risol<b>Rp 6k</b></span><span>Tea<b>Rp 8k</b></span></div>
+            <div className="preview-nav"><Coffee /><ChefHat /><LayoutGrid /><Users /></div>
+          </article>
+          <article className="preview-phone preview-phone-center">
+            <div className="preview-top"><BarChart3 size={17} /><span>Laporan</span><i /></div>
+            <strong>Ringkasan usaha</strong><small>Hari ini, 20 transaksi</small>
+            <div className="preview-kpi"><small>Omzet</small><b>Rp 1.240.000</b><span>+12,8%</span></div>
+            <div className="preview-chart"><i /><i /><i /><i /><i /><i /></div>
+            <div className="preview-row"><span>Arus kas</span><b>Rp 940k</b></div><div className="preview-row"><span>Pengeluaran</span><b>Rp 300k</b></div>
+          </article>
+          <article className="preview-phone preview-phone-right">
+            <div className="preview-top"><ReceiptText size={17} /><span>Pesanan</span><i /></div>
+            <strong>Pesanan baru</strong><small>Meja 06 • Dine-in</small>
+            <div className="preview-order"><span>2× Vanilla Latte</span><b>Rp 36k</b></div><div className="preview-order"><span>1× Risol Mayo</span><b>Rp 6k</b></div>
+            <div className="preview-total"><span>Total</span><b>Rp 42.000</b></div>
+            <button type="button" tabIndex="-1">Proses pembayaran</button>
+          </article>
+        </div>
+      </section>
 
-          <div className="macos-story-grid">
-            <article className="macos-story-card">
-              <div className="macos-story-icon"><Coffee size={18} /></div>
-              <h3>Kasir yang ringkas</h3>
-              <p>Pesanan, meja, member, add-on, dan pembayaran disusun supaya barista atau kasir bisa bergerak cepat tanpa UI yang ramai.</p>
-            </article>
-            <article className="macos-story-card">
-              <div className="macos-story-icon"><Cloud size={18} /></div>
-              <h3>Cloud per toko</h3>
-              <p>Setiap akun Google mendapat organisasi sendiri, jadi data toko tidak bercampur antar pengguna dan bisa dibuka dari perangkat lain.</p>
-            </article>
-            <article className="macos-story-card">
-              <div className="macos-story-icon"><ShieldCheck size={18} /></div>
-              <h3>Akses bertingkat</h3>
-              <p>Login Google tetap dilanjutkan PIN Owner atau Kasir, supaya akses ke aplikasi dan pengaturan tidak terbuka sembarangan.</p>
-            </article>
-            <article className="macos-story-card">
-              <div className="macos-story-icon"><BarChart3 size={18} /></div>
-              <h3>Laporan yang jelas</h3>
-              <p>Laporan harian, mingguan, bulanan, dan tahunan dibuat supaya pemilik bisa baca performa toko dengan cepat.</p>
-            </article>
-          </div>
-
-          <div className="macos-story-columns">
-            <div className="macos-story-panel">
-              <p className="macos-story-label">KENAPA DIBUAT</p>
-              <h3>Supaya operasional terasa tenang, bukan ribet.</h3>
-              <p>
-                Banyak aplikasi POS terasa seperti form lama yang dipindah ke browser. Selasar dibangun dengan pendekatan
-                yang lebih modern: halaman login yang bersih, onboarding akun baru, data cloud, dan pembatasan akses yang jelas.
-              </p>
-              <p>
-                Saat toko bertambah ramai, UI tetap harus terbaca. Karena itu setiap layar dibuat dengan hierarki visual yang
-                tegas, ruang kosong yang cukup, dan animasi yang tidak berlebihan.
-              </p>
-            </div>
-
-            <div className="macos-story-panel">
-              <p className="macos-story-label">ALUR PEMAKAIAN</p>
-              <div className="macos-story-timeline">
-                <div><span>1</span><p>Masuk dengan akun Google yang sudah diizinkan.</p></div>
-                <div><span>2</span><p>Jika akun baru, isi nama toko dan buat PIN terlebih dahulu.</p></div>
-                <div><span>3</span><p>Buka shift lalu mulai transaksi, stok, dan laporan.</p></div>
-                <div><span>4</span><p>Data tetap sinkron ke cloud untuk perangkat lain.</p></div>
-              </div>
-            </div>
-          </div>
-
-          <div className="macos-story-footer">
-            <div><Sparkles size={15} /><span>Clean interface</span></div>
-            <div><Gauge size={15} /><span>Responsif saat dipakai harian</span></div>
-            <div><Users size={15} /><span>Siap multi user / multi device</span></div>
-          </div>
-        </section>
-      </main>
-
-      <nav className="macos-dock" aria-label="Fitur Selasar POS">
-        <div><span className="dock-icon dock-coffee"><Coffee size={17} /></span><small>Kasir</small></div>
-        <div><span className="dock-icon dock-cloud"><Cloud size={17} /></span><small>Cloud</small></div>
-        <div><span className="dock-icon dock-chart"><BarChart3 size={17} /></span><small>Laporan</small></div>
-        <div><span className="dock-icon dock-lock"><ShieldCheck size={17} /></span><small>Aman</small></div>
-      </nav>
-    </div>
-  );
+      <section className="concept-feature-strip" aria-label="Fitur utama">
+        <article><Coffee size={18} /><div><strong>Kasir cepat</strong><span>Pesanan sampai struk</span></div></article>
+        <article><ChefHat size={18} /><div><strong>Dapur sinkron</strong><span>Status pesanan langsung</span></div></article>
+        <article><Cloud size={18} /><div><strong>Cloud aman</strong><span>Data per organisasi</span></div></article>
+        <article><BarChart3 size={18} /><div><strong>Laporan lengkap</strong><span>Omzet, laba, dan arus kas</span></div></article>
+      </section>
+    </main>
+  </div>;
 };
