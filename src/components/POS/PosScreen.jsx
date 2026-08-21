@@ -304,9 +304,30 @@ export const PosScreen = ({
         {/* Delivero-style animated promo banner — rotates 3 slides */}
         {(() => {
           const slides = [
-            { tag: 'SIGNATURE', title: 'KOPI SELASAR', em: 'Aren · Fresh Milk', sub: 'Signature blend · racikan hari ini', icon: '☕' },
-            { tag: 'PROMO HARI INI', title: 'CROFFLE + LATTE', em: '−20% Bundling', sub: 'Berlaku 07:00 – 15:00 setiap hari', icon: '🥐' },
-            { tag: 'BARU', title: 'MATCHA SELASAR', em: 'Premium Ceremonial', sub: 'Rasa umami · tanpa tambahan gula', icon: '🍵' },
+            {
+              tag: 'SIGNATURE',
+              title: 'KOPI SELASAR',
+              em: 'Aren · Fresh Milk',
+              sub: 'Signature blend · racikan hari ini',
+              img: 'https://images.unsplash.com/photo-1461023058943-07fcbe16d735?w=520&q=80&auto=format&fit=crop',
+              badge: 'Rp 25K',
+            },
+            {
+              tag: 'PROMO HARI INI',
+              title: 'CROFFLE + LATTE',
+              em: '−20% Bundling',
+              sub: 'Berlaku 07:00 – 15:00 setiap hari',
+              img: 'https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=520&q=80&auto=format&fit=crop',
+              badge: '−20%',
+            },
+            {
+              tag: 'BARU',
+              title: 'MATCHA SELASAR',
+              em: 'Premium Ceremonial',
+              sub: 'Rasa umami · tanpa tambahan gula',
+              img: 'https://images.unsplash.com/photo-1536256263959-770b48d82b0a?w=520&q=80&auto=format&fit=crop',
+              badge: 'NEW',
+            },
           ];
           const s = slides[bannerSlideIdx];
           return (
@@ -314,8 +335,10 @@ export const PosScreen = ({
               <span className="pos-delv-banner-tag">{s.tag}</span>
               <h3>{s.title}<em>{s.em}</em></h3>
               <p>{s.sub}</p>
-              <div className="pos-delv-banner-cta">Order<br/>Cepat</div>
-              <div className="pos-delv-banner-decor" aria-hidden="true">{s.icon}</div>
+              <div className="pos-delv-banner-badge">{s.badge}</div>
+              <div className="pos-delv-banner-photo">
+                <img src={s.img} alt={s.title} loading="lazy" />
+              </div>
               <div className="pos-delv-banner-dots">
                 {[0,1,2].map(i => (
                   <button

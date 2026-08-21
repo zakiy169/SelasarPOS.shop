@@ -339,7 +339,7 @@ body.pos-delivero-active .pos-delv-banner {
   display: block;
   border-radius: var(--delv-radius);
   padding: 32px 34px;
-  min-height: 200px;
+  min-height: 240px;
   margin-bottom: 22px;
   overflow: hidden;
   background: #1F3EC7;
@@ -456,60 +456,72 @@ body.pos-delivero-active .pos-delv-banner p {
   max-width: 55%;
 }
 
-body.pos-delivero-active .pos-delv-banner-decor {
+body.pos-delivero-active .pos-delv-banner-photo {
   position: absolute;
   right: 30px;
   top: 50%;
-  transform: translateY(-50%);
+  transform: translateY(-50%) rotate(-4deg);
   z-index: 2;
-  width: 148px;
-  height: 148px;
-  border-radius: 50%;
-  background:
-    radial-gradient(circle at 35% 35%, #FFE58A 0%, #FFB84D 45%, #E88A2E 90%);
+  width: 220px;
+  height: 220px;
+  border-radius: 22px;
+  overflow: hidden;
   box-shadow:
-    0 20px 40px rgba(255, 154, 46, 0.4),
-    inset 0 -12px 24px rgba(180, 90, 20, 0.28);
-  display: grid;
-  place-items: center;
-  font-size: 78px;
-  line-height: 1;
-  filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.25));
-  animation: selasar-banner-orb-float 6s ease-in-out infinite;
+    0 24px 44px rgba(0, 0, 0, 0.28),
+    0 0 0 6px #FFFFFF,
+    0 0 0 8px rgba(255, 217, 59, 0.6);
+  animation: selasar-banner-photo-float 6s ease-in-out infinite;
 }
 
-@keyframes selasar-banner-orb-float {
-  0%, 100% { transform: translateY(-50%) rotate(0deg); }
-  50%      { transform: translateY(-56%) rotate(6deg); }
+body.pos-delivero-active .pos-delv-banner-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
-/* Quick order button chip */
-body.pos-delivero-active .pos-delv-banner-cta {
+@keyframes selasar-banner-photo-float {
+  0%, 100% { transform: translateY(-50%) rotate(-4deg); }
+  50%      { transform: translateY(-52%) rotate(-2deg); }
+}
+
+/* Editorial-magazine style badge, top-right of the photo card */
+body.pos-delivero-active .pos-delv-banner-badge {
   position: absolute;
-  right: 220px;
-  bottom: 40px;
-  z-index: 3;
-  width: 74px;
-  height: 74px;
-  border-radius: 50%;
-  background: #FFFFFF;
+  right: 200px;
+  top: 26px;
+  z-index: 4;
+  padding: 8px 14px;
+  background: #FFD93B;
   color: #1F3EC7;
-  display: grid;
-  place-items: center;
-  text-align: center;
-  font-size: 10px;
-  font-weight: 800;
-  line-height: 1.1;
-  letter-spacing: 0.02em;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.18);
-  border: 3px solid #FFD93B;
-  transform: rotate(-8deg);
-  animation: selasar-banner-cta-pulse 3s ease-in-out infinite;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif;
+  font-weight: 900;
+  font-size: 16px;
+  letter-spacing: -0.01em;
+  border-radius: 6px;
+  transform: rotate(8deg);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.22);
+  border: 2px solid #1F3EC7;
+  animation: selasar-banner-badge-wiggle 4s ease-in-out infinite;
 }
 
-@keyframes selasar-banner-cta-pulse {
-  0%, 100% { transform: rotate(-8deg) scale(1); }
-  50%      { transform: rotate(-4deg) scale(1.05); }
+body.pos-delivero-active .pos-delv-banner-badge::after {
+  content: '';
+  position: absolute;
+  bottom: -6px;
+  right: 8px;
+  width: 8px;
+  height: 8px;
+  background: #FFD93B;
+  border: 2px solid #1F3EC7;
+  border-top: none;
+  border-left: none;
+  transform: rotate(45deg);
+}
+
+@keyframes selasar-banner-badge-wiggle {
+  0%, 100% { transform: rotate(8deg); }
+  50%      { transform: rotate(12deg) scale(1.04); }
 }
 
 /* Search bar (in filter area) */
