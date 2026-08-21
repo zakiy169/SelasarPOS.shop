@@ -88,6 +88,25 @@ export const PosScreen = ({
     return () => document.body.classList.remove('mobile-cart-open');
   }, [mobileCartOpen]);
 
+  // Delivero-inspired POS theme is only enabled on this screen.
+  useEffect(() => {
+    document.body.classList.add('pos-delivero-active');
+    return () => document.body.classList.remove('pos-delivero-active');
+  }, []);
+
+  // Emoji icon per category to render inside the Delivero-style category pills.
+  const CATEGORY_ICON = {
+    all: '☕',
+    signature: '✨',
+    espresso: '⚡',
+    manual: '🫖',
+    noncoffee: '🥤',
+    pastry: '🥐',
+    beans: '📦',
+  };
+
+  const greetingName = activeShift?.baristaName || activeShift?.name || 'Barista';
+
   useEffect(() => {
     const hasPosModal = Boolean(selectedProductForModal || showPaymentModal || completedTransaction || successTransaction);
     document.body.classList.toggle('pos-modal-open', hasPosModal);
@@ -271,9 +290,21 @@ export const PosScreen = ({
       <div className="pos-catalog-section" style={{ filter: !activeShift ? 'blur(10px)' : 'none', pointerEvents: !activeShift ? 'none' : 'auto' }}>
 
         <header className="pos-workspace-hero">
-          <div><span><Sparkles size={14} /> Workspace kasir</span><h2>Pilih menu, buat pesanan.</h2><p>Katalog, ketersediaan produk, pelanggan, dan pembayaran dalam satu alur cepat.</p></div>
+          <div><span><Sparkles size={14} /> Workspace kasir</span><h2>Hai {greetingName}, siap layani pelanggan.</h2><p>Katalog, ketersediaan produk, pelanggan, dan pembayaran dalam satu alur cepat.</p></div>
           <aside><small>Shift aktif</small><strong>{activeShift?.shiftType || activeShift?.name || 'Belum dibuka'}</strong><span>{activeShift?.baristaName || activeShift?.name || 'Buka shift untuk mulai'}</span></aside>
         </header>
+
+        {/* Delivero-style promo banner */}
+        <div className="pos-delv-banner" role="img" aria-label="Menu spesial hari ini">
+          <span className="pos-delv-banner-tag">Kedai Kopi Selasar</span>
+          <h3>Menu of<em>The Day — Kopi Selasar Aren</em></h3>
+          <p>Signature Selasar · Fresh Milk & Gula Aren Organik</p>
+          <div className="pos-delv-banner-decor" aria-hidden="true">☕</div>
+        </div>
+
+        <div className="pos-delv-section-title">
+          <h4>Kategori</h4>
+        </div>
 
         <div className="pos-filter-bar">
           <div className="category-pills">
@@ -281,6 +312,7 @@ export const PosScreen = ({
               <button
                 key={cat.id}
                 className={`category-pill ${selectedCategory === cat.id ? 'active' : ''}`}
+                data-icon={CATEGORY_ICON[cat.id] || '•'}
                 onClick={() => { sounds.playBeep(); setSelectedCategory(cat.id); }}
               >
                 <span>{cat.name}</span>
@@ -293,7 +325,7 @@ export const PosScreen = ({
               <Search size={16} color="var(--text-muted)" />
               <input 
                 type="text" 
-                placeholder="Cari kopi, pastry..."
+                placeholder="Cari kopi, pastry, snack..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
@@ -321,6 +353,11 @@ export const PosScreen = ({
               <span>{bluetoothPrinter.isConnected ? `Printer` : 'Printer BT'}</span>
             </button>
           </div>
+        </div>
+
+        <div className="pos-delv-section-title">
+          <h4>Menu Populer</h4>
+          <a>{filteredProducts.length} produk tersedia</a>
         </div>
 
         {/* Product Cards Grid */}
