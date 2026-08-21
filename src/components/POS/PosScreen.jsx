@@ -11,7 +11,13 @@ import {
   Lock,
   X,
   Bluetooth,
-  Sparkles
+  Sparkles,
+  Coffee,
+  Zap,
+  GlassWater,
+  Utensils,
+  Package,
+  LayoutGrid
 } from 'lucide-react';
 import { formatRupiah } from '../../utils/formatters';
 import { ProductModal } from './ProductModal';
@@ -94,22 +100,31 @@ export const PosScreen = ({
     // remains here as a defensive no-op in case the app is embedded elsewhere.
   }, []);
 
-  // Rotating promo banner slide — 3 designs, auto-cycle every 5s.
+  const promoSlides = Array.isArray(appSettings?.promoSlides) && appSettings.promoSlides.length
+    ? appSettings.promoSlides
+    : [];
+
+  // Rotating promo banner slide — owner-configurable, auto-cycle every 5s.
   const [bannerSlideIdx, setBannerSlideIdx] = useState(0);
   useEffect(() => {
-    const t = setInterval(() => setBannerSlideIdx(i => (i + 1) % 3), 5000);
+    if (promoSlides.length < 2) return undefined;
+    const t = setInterval(() => setBannerSlideIdx(i => (i + 1) % promoSlides.length), 5000);
     return () => clearInterval(t);
-  }, []);
+  }, [promoSlides.length]);
 
-  // Emoji icon per category to render inside the Delivero-style category pills.
+  useEffect(() => {
+    if (bannerSlideIdx >= promoSlides.length) setBannerSlideIdx(0);
+  }, [bannerSlideIdx, promoSlides.length]);
+
+  // One consistent vector icon language for every product category.
   const CATEGORY_ICON = {
-    all: '☕',
-    signature: '✨',
-    espresso: '⚡',
-    manual: '🫖',
-    noncoffee: '🥤',
-    pastry: '🥐',
-    beans: '📦',
+    all: LayoutGrid,
+    signature: Sparkles,
+    espresso: Zap,
+    manual: Coffee,
+    noncoffee: GlassWater,
+    pastry: Utensils,
+    beans: Package,
   };
 
   const greetingName = activeShift?.baristaName || activeShift?.name || 'Barista';
@@ -297,52 +312,30 @@ export const PosScreen = ({
       <div className="pos-catalog-section" style={{ filter: !activeShift ? 'blur(10px)' : 'none', pointerEvents: !activeShift ? 'none' : 'auto' }}>
 
         <header className="pos-workspace-hero">
-          <div><span><Sparkles size={14} /> Workspace kasir</span><h2>Hai {greetingName}, siap layani pelanggan.</h2><p>Katalog, ketersediaan produk, pelanggan, dan pembayaran dalam satu alur cepat.</p></div>
+          <div>
+            <span><Sparkles size={14} /> Workspace kasir</span>
+            <h2 className="pos-greeting-title">Hai {greetingName}, siap layani pelanggan.</h2>
+            <p>Katalog, ketersediaan produk, pelanggan, dan pembayaran dalam satu alur cepat.</p>
+          </div>
           <aside><small>Shift aktif</small><strong>{activeShift?.shiftType || activeShift?.name || 'Belum dibuka'}</strong><span>{activeShift?.baristaName || activeShift?.name || 'Buka shift untuk mulai'}</span></aside>
         </header>
 
         {/* Delivero-style animated promo banner — rotates 3 slides */}
-        {(() => {
-          const slides = [
-            {
-              tag: 'SIGNATURE',
-              title: 'KOPI SELASAR',
-              em: 'Aren · Fresh Milk',
-              sub: 'Signature blend · racikan hari ini',
-              img: 'https://images.unsplash.com/photo-1461023058943-07fcbe16d735?w=520&q=80&auto=format&fit=crop',
-              badge: 'Rp 25K',
-            },
-            {
-              tag: 'PROMO HARI INI',
-              title: 'CROFFLE + LATTE',
-              em: '−20% Bundling',
-              sub: 'Berlaku 07:00 – 15:00 setiap hari',
-              img: 'https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=520&q=80&auto=format&fit=crop',
-              badge: '−20%',
-            },
-            {
-              tag: 'BARU',
-              title: 'MATCHA SELASAR',
-              em: 'Premium Ceremonial',
-              sub: 'Rasa umami · tanpa tambahan gula',
-              img: 'https://images.unsplash.com/photo-1536256263959-770b48d82b0a?w=520&q=80&auto=format&fit=crop',
-              badge: 'NEW',
-            },
-          ];
-          const s = slides[bannerSlideIdx];
+        {promoSlides.length > 0 && (() => {
+          const s = promoSlides[bannerSlideIdx];
           return (
-            <div className="pos-delv-banner" key={bannerSlideIdx} role="img" aria-label={`Promo: ${s.title} ${s.em}`}>
+            <div className="pos-delv-banner" key={s.id || bannerSlideIdx} role="img" aria-label={`Promo: ${s.title} ${s.subtitle}`}>
               <span className="pos-delv-banner-tag">{s.tag}</span>
-              <h3>{s.title}<em>{s.em}</em></h3>
-              <p>{s.sub}</p>
+              <h3>{s.title}<em>{s.subtitle}</em></h3>
+              <p>{s.description}</p>
               <div className="pos-delv-banner-badge">{s.badge}</div>
               <div className="pos-delv-banner-photo">
-                <img src={s.img} alt={s.title} loading="lazy" />
+                {s.image ? <img src={s.image} alt={s.title} loading="lazy" /> : <div className="pos-delv-banner-placeholder" aria-hidden="true"><span>SELASAR</span><b>{s.title}</b></div>}
               </div>
               <div className="pos-delv-banner-dots">
-                {[0,1,2].map(i => (
+                {promoSlides.map((slide, i) => (
                   <button
-                    key={i}
+                    key={slide.id || i}
                     type="button"
                     className={i === bannerSlideIdx ? 'active' : ''}
                     onClick={() => setBannerSlideIdx(i)}
@@ -360,16 +353,17 @@ export const PosScreen = ({
 
         <div className="pos-filter-bar">
           <div className="category-pills">
-            {CATEGORIES.map(cat => (
-              <button
+            {CATEGORIES.map(cat => {
+              const CategoryIcon = CATEGORY_ICON[cat.id] || LayoutGrid;
+              return <button
                 key={cat.id}
                 className={`category-pill ${selectedCategory === cat.id ? 'active' : ''}`}
-                data-icon={CATEGORY_ICON[cat.id] || '•'}
                 onClick={() => { sounds.playBeep(); setSelectedCategory(cat.id); }}
               >
-                <span>{cat.name}</span>
-              </button>
-            ))}
+                <span className="category-icon" aria-hidden="true"><CategoryIcon size={20} strokeWidth={2.25} /></span>
+                <span className="category-label">{cat.name}</span>
+              </button>;
+            })}
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>

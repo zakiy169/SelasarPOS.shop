@@ -13,6 +13,7 @@ export const MenuManager = ({
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const importFileRef = useRef(null);
+  const productImageRef = useRef(null);
   const [isImporting, setIsImporting] = useState(false);
 
   const handleImportJson = async (event) => {
@@ -175,6 +176,17 @@ export const MenuManager = ({
     if (window.confirm('Yakin ingin menghapus menu ini? (Akan hilang dari kasir)')) {
       setProducts(prev => prev.filter(p => p.id !== id));
     }
+  };
+
+  const handleProductImageUpload = (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+    if (!file.type.startsWith('image/')) return alert('Pilih file gambar (JPG, PNG, atau WebP).');
+    if (file.size > 2 * 1024 * 1024) return alert('Ukuran gambar maksimal 2 MB agar data toko tetap ringan.');
+    const reader = new FileReader();
+    reader.onload = () => setFormData(prev => ({ ...prev, image: String(reader.result || '') }));
+    reader.readAsDataURL(file);
   };
 
   return (
@@ -468,7 +480,7 @@ export const MenuManager = ({
               </div>
 
               <div>
-                <label style={{ display: 'block', fontSize: '13px', color: 'var(--text-muted)', marginBottom: '6px' }}>URL Gambar Produk</label>
+                <label style={{ display: 'block', fontSize: '13px', color: 'var(--text-muted)', marginBottom: '6px' }}>Foto Produk</label>
                 <div style={{ display: 'flex', gap: '12px' }}>
                   <input 
                     type="text" 
@@ -476,8 +488,10 @@ export const MenuManager = ({
                     style={{ flex: 1 }}
                     value={formData.image}
                     onChange={(e) => setFormData({...formData, image: e.target.value})}
-                    placeholder="https://..."
+                    placeholder="Tempel URL gambar atau unggah dari perangkat"
                   />
+                  <input ref={productImageRef} type="file" accept="image/png,image/jpeg,image/webp" onChange={handleProductImageUpload} style={{ display: 'none' }} />
+                  <button type="button" onClick={() => productImageRef.current?.click()} className="btn-primary" style={{ whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: '6px' }}><Upload size={16} /> Unggah</button>
                   <ProductImage src={formData.image} alt="Preview produk" name={formData.name || 'Produk baru'} category={formData.categoryId} className="menu-product-thumb" />
                 </div>
               </div>

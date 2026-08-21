@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { ArrowRight, Check } from 'lucide-react';
 import { formatRupiah } from '../../utils/formatters';
 
@@ -12,7 +13,7 @@ export const TransactionSuccessScreen = ({ transaction, onContinue }) => {
     return () => window.clearTimeout(timer);
   }, []);
 
-  return (
+  return createPortal((
     <section className={`transaction-success-scene ${ready ? 'is-ready' : ''}`} role="dialog" aria-modal="true" aria-label="Pembayaran berhasil">
       <div className="success-orb success-orb-one" aria-hidden="true" />
       <div className="success-orb success-orb-two" aria-hidden="true" />
@@ -29,5 +30,5 @@ export const TransactionSuccessScreen = ({ transaction, onContinue }) => {
         <span>Lihat ringkasan pesanan</span><ArrowRight size={19} />
       </button>
     </section>
-  );
+  ), document.body);
 };

@@ -38,6 +38,7 @@ export const Header = ({
   const [btName, setBtName] = useState(bluetoothPrinter.deviceName);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [profileImageFailed, setProfileImageFailed] = useState(false);
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
@@ -95,6 +96,9 @@ export const Header = ({
   return (
     <>
     <header className="selasar-header">
+      <button type="button" className="mobile-selasar-brand" onClick={() => handleTabClick('pos')} aria-label="Buka kasir Selasar">
+        <img src="/selasar-chunky-logo-v2.png?v=20260822-2" alt="Selasar" />
+      </button>
       <div className="header-left">
         {/* Simplified Clean Logo Header */}
         <div
@@ -126,7 +130,8 @@ export const Header = ({
           {mobileNavOpen ? <X size={20} /> : <Menu size={20} />}
         </button>
         {/* Bluetooth Thermal Printer Status Pill */}
-        <div 
+        <div
+          className={`header-printer-pill ${btConnected ? 'connected' : 'disconnected'}`}
           onClick={onOpenBluetoothModal}
           style={{
             display: 'flex',
@@ -177,8 +182,8 @@ export const Header = ({
         {/* Logged in User Badge */}
         <div className="user-profile-wrap">
           <button type="button" className="user-role-badge" onClick={() => setProfileOpen(open => !open)} title="Buka profil akun">
-            {authenticatedUser?.avatarUrl
-              ? <img src={authenticatedUser.avatarUrl} alt="Profil pengguna" />
+            {authenticatedUser?.avatarUrl && !profileImageFailed
+              ? <img src={authenticatedUser.avatarUrl} alt="Profil pengguna" onError={() => setProfileImageFailed(true)} />
               : <User size={15} />}
             <span className="profile-name">{authenticatedUser?.name || (isOwner ? 'Owner' : 'Kasir')}</span>
             <small>{isOwner ? 'Owner' : 'Kasir'}</small>
@@ -186,8 +191,8 @@ export const Header = ({
           {profileOpen && (
             <div className="user-profile-popover">
               <div className="user-profile-heading">
-                {authenticatedUser?.avatarUrl
-                  ? <img src={authenticatedUser.avatarUrl} alt="Profil pengguna" />
+                {authenticatedUser?.avatarUrl && !profileImageFailed
+                  ? <img src={authenticatedUser.avatarUrl} alt="Profil pengguna" onError={() => setProfileImageFailed(true)} />
                   : <div className="user-profile-avatar"><User size={21} /></div>}
                 <div><strong>{authenticatedUser?.name || 'Pengguna'}</strong><span>{authenticatedUser?.email || 'Email tidak tersedia'}</span></div>
               </div>
@@ -215,6 +220,9 @@ export const Header = ({
     </header>
 
     <aside className="desktop-workspace-sidebar" aria-label="Navigasi workspace">
+      <div className="sidebar-brand-lockup" aria-label="Selasar">
+        <img src="/selasar-chunky-logo-v2.png?v=20260822-2" alt="Selasar" />
+      </div>
       <div className="desktop-sidebar-scroll">
         {navigationGroups.map(group => <section className="desktop-nav-group" key={group.label}>
           <p>{group.label}</p>
@@ -233,7 +241,10 @@ export const Header = ({
     {mobileNavOpen && <div className="mobile-workspace-overlay" onMouseDown={event => event.target === event.currentTarget && setMobileNavOpen(false)}>
       <nav className="mobile-workspace-sheet" aria-label="Menu workspace">
         <div className="mobile-sheet-handle" />
-        <div className="nav-sheet-heading"><div><strong>Menu workspace</strong><span>Semua fitur aplikasi</span></div><button type="button" onClick={() => setMobileNavOpen(false)} aria-label="Tutup menu"><X size={18} /></button></div>
+        <div className="nav-sheet-heading">
+          <img className="mobile-drawer-logo" src="/selasar-chunky-logo-v2.png?v=20260822-2" alt="Selasar" />
+          <button type="button" onClick={() => setMobileNavOpen(false)} aria-label="Tutup menu"><X size={18} /></button>
+        </div>
         <div className="mobile-sheet-groups">
           {navigationGroups.map(group => <section className="nav-group" key={group.label}>
             <p className="nav-group-label">{group.label}</p>
@@ -277,7 +288,7 @@ export const Header = ({
       <button
         type="button"
         className={moreIsActive ? 'active' : ''}
-        onClick={() => setMobileNavOpen(open => !open)}
+        onClick={() => setMobileNavOpen(true)}
         aria-label={secondaryActiveTab ? `Menu lainnya, halaman aktif ${secondaryActiveTab.label}` : 'Menu lainnya'}
         aria-expanded={mobileNavOpen}
         aria-current={secondaryActiveTab ? 'page' : undefined}

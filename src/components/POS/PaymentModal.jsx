@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { X, QrCode, Banknote, CreditCard, Wallet, CheckCircle } from 'lucide-react';
 import { formatRupiah } from '../../utils/formatters';
 import { sounds } from '../../utils/audio';
@@ -60,7 +61,7 @@ export const PaymentModal = ({ grandTotal, cartItems, customerType, tableName, q
     }, 600);
   };
 
-  return (
+  return createPortal((
     <div className="modal-overlay payment-overlay" onClick={onClose}>
       <div className="modal-card payment-modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
@@ -285,5 +286,5 @@ export const PaymentModal = ({ grandTotal, cartItems, customerType, tableName, q
         </div>
       </div>
     </div>
-  );
+  ), document.body);
 };

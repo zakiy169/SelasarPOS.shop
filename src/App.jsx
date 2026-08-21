@@ -74,6 +74,11 @@ const DEFAULT_APP_SETTINGS = {
   taxPercent: 11,
   serviceChargePercent: 5,
   font: 'jakarta',
+  promoSlides: [
+    { id: 'signature', tag: 'SIGNATURE', title: 'KOPI SELASAR', subtitle: 'Aren · Fresh Milk', description: 'Signature blend · racikan hari ini', image: '', badge: 'Rp 25K' },
+    { id: 'bundle', tag: 'PROMO HARI INI', title: 'CROFFLE + LATTE', subtitle: '−20% Bundling', description: 'Berlaku 07:00 – 15:00 setiap hari', image: '', badge: '−20%' },
+    { id: 'matcha', tag: 'BARU', title: 'MATCHA SELASAR', subtitle: 'Premium Ceremonial', description: 'Rasa umami · tanpa tambahan gula', image: '', badge: 'NEW' },
+  ],
   onboardingCompleted: false,
   operationalExpenses: [],
   profile: {
@@ -1513,31 +1518,20 @@ export function App() {
     };
   }, [activeTab, asistenMinimized]);
 
-  // Ensure the Selasar header branding has a working image asset.
-  // This also fixes older Header builds that still point at a stale logo path.
+  // Keep legacy header instances on the same chunky Selasar brand asset used
+  // by the desktop sidebar. Older builds used to force the rectangular logo.
   useEffect(() => {
-    const logoSrc = '/selasar-logo-header.png';
+    const logoSrc = '/selasar-chunky-logo-v2.png?v=20260822-2';
     const patchLogo = () => {
-      document.querySelectorAll('header img, .selasar-header img').forEach((img) => {
-        const alt = String(img.getAttribute('alt') || '').toLowerCase();
-        const src = String(img.getAttribute('src') || '').toLowerCase();
-        const rect = img.getBoundingClientRect();
-        const looksLikeBrand =
-          alt.includes('selasar') ||
-          src.includes('selasar') ||
-          src.includes('logo') ||
-          (rect.left < window.innerWidth * 0.45 && rect.width > 40 && rect.height > 25);
-
-        if (looksLikeBrand) {
-          if (img.getAttribute('src') !== logoSrc) {
-            img.setAttribute('src', logoSrc);
-          }
-          img.style.width = '142px';
-          img.style.height = '52px';
-          img.style.objectFit = 'contain';
-          img.style.objectPosition = 'center';
-          img.style.display = 'block';
+      document.querySelectorAll('.mobile-selasar-brand img, .sidebar-brand-lockup img, .header-printer-status img').forEach((img) => {
+        if (img.getAttribute('src') !== logoSrc) {
+          img.setAttribute('src', logoSrc);
         }
+        img.style.width = '100%';
+        img.style.height = '100%';
+        img.style.objectFit = 'contain';
+        img.style.objectPosition = 'center';
+        img.style.display = 'block';
       });
     };
 

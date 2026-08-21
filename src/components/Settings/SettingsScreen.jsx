@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   Printer, QrCode, Percent, UploadCloud, Bluetooth,
-  CheckCircle2, Palette, Type, Info, Mail, AtSign, UserRound, KeyRound, Trash2
+  CheckCircle2, Palette, Type, Info, Mail, AtSign, UserRound, KeyRound, Trash2, Plus, Trash
 } from 'lucide-react';
 import { sounds } from '../../utils/audio';
 import { bluetoothPrinter } from '../../utils/bluetoothPrinter';
@@ -27,6 +27,7 @@ export const SettingsScreen = ({ appSettings, setAppSettings, addons, setAddons,
   const [btConnected, setBtConnected] = useState(bluetoothPrinter.isConnected);
   const [saved, setSaved] = useState(false);
   const [activeSection, setActiveSection] = useState('tampilan');
+  const bannerImageInputRef = useRef(null);
 
   useEffect(() => {
     const syncBt = () => {
@@ -63,6 +64,17 @@ export const SettingsScreen = ({ appSettings, setAppSettings, addons, setAddons,
     if (!window.confirm('Reset semua data toko ini? Produk, stok, meja, member, transaksi, add-on, dan shift akan dikosongkan di Supabase.')) return;
     onResetOrganizationData?.();
     sounds.playSuccessChime();
+  };
+  const promoSlides = Array.isArray(appSettings.promoSlides) ? appSettings.promoSlides : [];
+  const updatePromoSlide = (index, key, value) => handleChange('promoSlides', promoSlides.map((slide, i) => i === index ? { ...slide, [key]: value } : slide));
+  const addPromoSlide = () => handleChange('promoSlides', [...promoSlides, { id: `promo-${Date.now()}`, tag: 'PROMO', title: 'MENU BARU', subtitle: 'Tulis penawaran', description: 'Keterangan promo', image: '', badge: 'BARU' }]);
+  const removePromoSlide = (index) => handleChange('promoSlides', promoSlides.filter((_, i) => i !== index));
+  const handleBannerImageUpload = (event) => {
+    const file = event.target.files?.[0]; const index = Number(event.target.dataset.index); event.target.value = '';
+    if (!file || !Number.isInteger(index)) return;
+    if (!file.type.startsWith('image/')) return alert('Pilih file gambar.');
+    if (file.size > 2 * 1024 * 1024) return alert('Ukuran gambar maksimal 2 MB.');
+    const reader = new FileReader(); reader.onload = () => updatePromoSlide(index, 'image', String(reader.result || '')); reader.readAsDataURL(file);
   };
 
   return (
@@ -125,6 +137,32 @@ export const SettingsScreen = ({ appSettings, setAppSettings, addons, setAddons,
                 )}
               </button>
             ))}
+          </div>
+        </section>
+
+        <section className="settings-surface promo-editor">
+          <div className="promo-editor-heading">
+            <div><span className="promo-editor-icon"><Palette size={19} /></span><div><h3>Banner promo kasir</h3><p>Kelola konten banner yang berputar otomatis di halaman kasir.</p></div></div>
+            <button type="button" className="promo-editor-add" onClick={addPromoSlide}><Plus size={16} /> Tambah slide</button>
+          </div>
+          <input ref={bannerImageInputRef} type="file" accept="image/png,image/jpeg,image/webp" onChange={handleBannerImageUpload} style={{ display: 'none' }} />
+          <div className="promo-editor-list">
+            {promoSlides.map((slide, index) => <article className="promo-editor-card" key={slide.id || index}>
+              <div className="promo-editor-card-head"><div><span>{String(index + 1).padStart(2, '0')}</span><div><b>Slide {index + 1}</b><small>{slide.title || 'Banner tanpa judul'}</small></div></div><button type="button" onClick={() => removePromoSlide(index)} disabled={promoSlides.length === 1} title="Hapus slide"><Trash2 size={15} /><span>Hapus</span></button></div>
+              <div className="promo-editor-upload">
+                <div className="promo-editor-preview">{slide.image ? <img src={slide.image} alt={`Preview ${slide.title || `slide ${index + 1}`}`} /> : <div><span>SELASAR</span><b>{slide.title || 'PROMO'}</b><small>Preview placeholder</small></div>}<i>{slide.badge || 'PROMO'}</i></div>
+                <button type="button" onClick={() => { bannerImageInputRef.current.dataset.index = index; bannerImageInputRef.current.click(); }}><UploadCloud size={15} /> {slide.image ? 'Ganti foto' : 'Unggah foto'}</button>
+                {slide.image && <button className="promo-editor-remove-image" type="button" onClick={() => updatePromoSlide(index, 'image', '')}>Hapus foto</button>}
+                <small>JPG, PNG, atau WebP · maks. 2 MB</small>
+              </div>
+              <div className="promo-editor-grid">
+                <label><span>Label kecil</span><input className="apple-input" value={slide.tag || ''} onChange={e => updatePromoSlide(index, 'tag', e.target.value)} placeholder="Contoh: PROMO HARI INI" /></label>
+                <label><span>Badge harga</span><input className="apple-input" value={slide.badge || ''} onChange={e => updatePromoSlide(index, 'badge', e.target.value)} placeholder="Contoh: −20%" /></label>
+                <label className="promo-editor-full"><span>Judul utama</span><input className="apple-input" value={slide.title || ''} onChange={e => updatePromoSlide(index, 'title', e.target.value)} placeholder="Contoh: KOPI SELASAR" /></label>
+                <label><span>Subjudul</span><input className="apple-input" value={slide.subtitle || ''} onChange={e => updatePromoSlide(index, 'subtitle', e.target.value)} placeholder="Contoh: Aren · Fresh Milk" /></label>
+                <label><span>Deskripsi singkat</span><input className="apple-input" value={slide.description || ''} onChange={e => updatePromoSlide(index, 'description', e.target.value)} placeholder="Contoh: Racikan spesial hari ini" /></label>
+              </div>
+            </article>)}
           </div>
         </section>
 

@@ -128,7 +128,7 @@ export const ShiftSettings = ({
 
   return (
     <div className={`shift-page ${embedded ? 'is-embedded' : ''}`} style={{ padding: embedded ? '0' : '24px', flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '20px', maxWidth: '1000px', margin: '0 auto', width: '100%' }}>
-      {!embedded && <div>
+      {!embedded && <div className="shift-heading">
         <h2 style={{ fontSize: '24px', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '10px' }}>
           <KeyRound size={26} color="var(--apple-blue)" />
           <span>Manajemen Shift Kasir & Rekonsiliasi Kas</span>

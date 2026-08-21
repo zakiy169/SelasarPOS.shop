@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Printer, Bluetooth, Share2 } from 'lucide-react';
 import { createReceiptText } from '../../utils/receipt';
 import { ReceiptPaper } from './ReceiptPaper';
@@ -44,7 +45,7 @@ export const ReceiptModal = ({ transaction, appSettings = {}, onClose }) => {
     setTimeout(restore, 1500);
   };
 
-  return <>
+  return createPortal(<>
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-card receipt-modal" onClick={e => e.stopPropagation()}>
         <div className="modal-header">
@@ -59,5 +60,5 @@ export const ReceiptModal = ({ transaction, appSettings = {}, onClose }) => {
       </div>
     </div>
     {showBtModal && <BluetoothModal onClose={() => setShowBtModal(false)} onConnected={() => { setShowBtModal(false); setTimeout(printBluetooth, 300); }} />}
-  </>;
+  </>, document.body);
 };
