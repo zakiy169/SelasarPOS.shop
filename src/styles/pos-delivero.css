@@ -1655,8 +1655,10 @@ body.pos-delivero-active .status-completed {
 
 /* Modal */
 body.pos-delivero-active .modal-overlay {
-  background: rgba(30, 20, 70, 0.45) !important;
-  backdrop-filter: blur(10px);
+  background: rgba(30, 20, 70, 0.55) !important;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  isolation: isolate;
 }
 
 body.pos-delivero-active .modal-card {
@@ -1665,12 +1667,16 @@ body.pos-delivero-active .modal-card {
   border-radius: 24px !important;
   color: var(--delv-text) !important;
   box-shadow: var(--delv-shadow-lg) !important;
+  isolation: isolate;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
 }
 
 body.pos-delivero-active .modal-header {
   background: linear-gradient(135deg, #F7F5FE 0%, #FFFFFF 100%) !important;
   border-bottom: 1px solid var(--delv-border) !important;
   color: var(--delv-text) !important;
+  backdrop-filter: none !important;
 }
 
 body.pos-delivero-active .modal-header h3 {
@@ -1690,6 +1696,7 @@ body.pos-delivero-active .modal-header button {
 body.pos-delivero-active .modal-body {
   color: var(--delv-text) !important;
   background: #FFFFFF !important;
+  backdrop-filter: none !important;
 }
 
 body.pos-delivero-active .modal-body label {
@@ -1705,8 +1712,81 @@ body.pos-delivero-active .modal-body textarea {
 }
 
 body.pos-delivero-active .modal-footer {
-  background: var(--delv-card-soft) !important;
+  background: #FFFFFF !important;
   border-top: 1px solid var(--delv-border) !important;
+  backdrop-filter: none !important;
+}
+
+/* Payment modal — must be a fully solid, mobile-safe sheet.
+   Previous build showed only blur on iOS because the modal card inherited
+   a semi-transparent background from the shared modal system. */
+body.pos-delivero-active .payment-overlay {
+  background: rgba(30, 20, 70, 0.55) !important;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+body.pos-delivero-active .modal-card.payment-modal,
+body.pos-delivero-active .payment-modal {
+  background: #FFFFFF !important;
+  color: var(--delv-text) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  isolation: isolate;
+  border: 1px solid var(--delv-border) !important;
+}
+
+body.pos-delivero-active .payment-modal .modal-header,
+body.pos-delivero-active .payment-modal .modal-body,
+body.pos-delivero-active .payment-modal .modal-footer {
+  background: #FFFFFF !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+body.pos-delivero-active .payment-modal .modal-header {
+  background: linear-gradient(135deg, #F7F5FE 0%, #FFFFFF 100%) !important;
+}
+
+/* Payment modal — mobile full-screen sheet, edge-to-edge, opaque */
+@media (max-width: 900px) {
+  body.pos-delivero-active .payment-overlay {
+    padding: 0 !important;
+    align-items: stretch !important;
+    background: #FFFFFF !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
+  body.pos-delivero-active .modal-card.payment-modal,
+  body.pos-delivero-active .payment-modal {
+    width: 100% !important;
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+    border-radius: 0 !important;
+    border: none !important;
+    background: #FFFFFF !important;
+    box-shadow: none !important;
+    overflow-y: auto !important;
+  }
+
+  body.pos-delivero-active .payment-modal .modal-body {
+    padding: 18px !important;
+    background: #FFFFFF !important;
+  }
+
+  body.pos-delivero-active .payment-modal .payment-total-panel {
+    background: linear-gradient(135deg, var(--delv-primary), #6B3EA8) !important;
+    color: #FFFFFF !important;
+    border: none !important;
+    padding: 22px !important;
+    margin-bottom: 20px !important;
+  }
+
+  body.pos-delivero-active .payment-modal .payment-total-panel span,
+  body.pos-delivero-active .payment-modal .payment-total-panel h2 {
+    color: #FFFFFF !important;
+  }
 }
 
 /* Payment modal */
@@ -1952,4 +2032,162 @@ body.pos-delivero-active .mobile-logout-nav .nav-icon {
   body.pos-delivero-active .report-hub {
     margin-left: 0 !important;
   }
+}
+
+/* ============================================================
+   LAYOUT POLISH — clean, grouped, professional grouping
+   applied to every operational page for consistency with POS
+   ============================================================ */
+
+/* Consistent inner max width so cards do not stretch on large screens */
+body.pos-delivero-active .reports-page,
+body.pos-delivero-active .kds-page,
+body.pos-delivero-active .loyalty-page,
+body.pos-delivero-active .inventory-page,
+body.pos-delivero-active .table-management-page,
+body.pos-delivero-active .menu-manager-page,
+body.pos-delivero-active .receipt-settings-page,
+body.pos-delivero-active .settings-page,
+body.pos-delivero-active .shift-page,
+body.pos-delivero-active .report-hub {
+  max-width: none;
+}
+
+/* KDS · nicer order card */
+body.pos-delivero-active .kds-page .kds-summary {
+  background: rgba(255, 255, 255, 0.14) !important;
+  padding: 4px 12px !important;
+  border-radius: 999px !important;
+  margin-top: 10px;
+  display: inline-flex;
+  gap: 14px;
+}
+
+body.pos-delivero-active .kds-page .kds-summary > div {
+  color: #FFFFFF !important;
+}
+
+body.pos-delivero-active .kds-card {
+  padding: 18px !important;
+  gap: 12px;
+  display: flex;
+  flex-direction: column;
+}
+
+body.pos-delivero-active .kds-card > div:first-child {
+  padding-bottom: 8px;
+  border-bottom: 1px dashed var(--delv-border-strong);
+}
+
+/* Tables · pill status badge on cards */
+body.pos-delivero-active .table-card {
+  padding: 18px !important;
+  gap: 10px;
+  display: flex;
+  flex-direction: column;
+}
+
+body.pos-delivero-active .table-card h3 {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 22px;
+  font-weight: 800;
+}
+
+body.pos-delivero-active .table-grid {
+  gap: 16px !important;
+}
+
+/* Reports · KPI card grouping */
+body.pos-delivero-active .report-metric {
+  padding: 18px !important;
+  min-height: auto !important;
+}
+
+body.pos-delivero-active .report-metric strong {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 28px !important;
+  letter-spacing: -0.02em;
+}
+
+body.pos-delivero-active .report-card {
+  padding: 20px !important;
+  border-radius: 20px !important;
+}
+
+body.pos-delivero-active .report-card-title h3 {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 18px;
+}
+
+/* Settings · surface & sections consistent padding */
+body.pos-delivero-active .settings-surface {
+  padding: 22px !important;
+  border-radius: 20px !important;
+}
+
+body.pos-delivero-active .settings-surface-title,
+body.pos-delivero-active .settings-card-heading {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 18px !important;
+  color: var(--delv-text) !important;
+  margin-bottom: 16px !important;
+}
+
+body.pos-delivero-active .settings-theme-grid,
+body.pos-delivero-active .settings-font-grid {
+  gap: 12px !important;
+}
+
+body.pos-delivero-active .settings-theme-grid button,
+body.pos-delivero-active .settings-font-grid button {
+  padding: 16px !important;
+  border-radius: 16px !important;
+}
+
+/* Loyalty · member table container consistent */
+body.pos-delivero-active .loyalty-page .apple-table-container,
+body.pos-delivero-active .loyalty-page .member-table-panel {
+  padding: 8px !important;
+}
+
+body.pos-delivero-active .apple-table th,
+body.pos-delivero-active .member-table th {
+  padding: 14px 18px !important;
+  font-size: 10px !important;
+}
+
+body.pos-delivero-active .apple-table td,
+body.pos-delivero-active .member-table td {
+  padding: 14px 18px !important;
+  font-size: 13px !important;
+}
+
+/* Inventory · clearer icon buttons and grouping */
+body.pos-delivero-active .inventory-page .apple-table-container {
+  padding: 8px !important;
+}
+
+/* Shift · card grouping */
+body.pos-delivero-active .shift-card {
+  padding: 20px !important;
+  border-radius: 20px !important;
+}
+
+/* Give the page main heading breathing room from cards below */
+body.pos-delivero-active .reports-heading + *,
+body.pos-delivero-active .kds-heading + *,
+body.pos-delivero-active .loyalty-heading + *,
+body.pos-delivero-active .inventory-heading + *,
+body.pos-delivero-active .tables-header + *,
+body.pos-delivero-active .menu-manager-heading + *,
+body.pos-delivero-active .receipt-settings-heading + *,
+body.pos-delivero-active .settings-hero + *,
+body.pos-delivero-active .report-hub-header + * {
+  margin-top: 6px;
+}
+
+/* Fixed transaction layers must be viewport-owned. The success screen
+   already spans the whole viewport; ensure the payment overlay does too. */
+body.pos-delivero-active .payment-overlay {
+  z-index: 950 !important;
 }
