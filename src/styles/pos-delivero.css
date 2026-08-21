@@ -66,18 +66,16 @@ body.pos-delivero-active .desktop-workspace-sidebar {
 }
 
 body.pos-delivero-active .desktop-workspace-sidebar::before {
-  content: 'Selasar';
+  content: '';
   display: block;
-  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif;
-  font-style: italic;
-  font-weight: 700;
-  font-size: 20px;
-  color: #FFFFFF;
-  padding: 6px 14px 10px;
-  text-align: center;
+  height: 78px;
+  padding: 8px 12px 10px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-  margin-bottom: 8px;
-  letter-spacing: 0.2px;
+  margin-bottom: 10px;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 240 100' fill='none'><g stroke='%23FFFFFF' stroke-width='4' stroke-linecap='round' stroke-linejoin='round' fill='none'><path d='M96 22 Q100 16 96 8' /><path d='M112 22 Q116 16 112 8' /><path d='M128 22 Q132 16 128 8' /><path d='M86 30 h68 v22 q0 10 -8 14 h-52 q-8 -4 -8 -14 z' fill='%23FFFFFF' fill-opacity='0.06' /><path d='M154 36 q14 4 14 14 t-14 14' /></g><text x='120' y='92' fill='%23FFFFFF' font-family='-apple-system, SF Pro Display, sans-serif' font-size='22' font-weight='900' text-anchor='middle' letter-spacing='3'>SELASAR.</text></svg>");
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 168px auto;
   flex: 0 0 auto;
 }
 
@@ -2274,10 +2272,164 @@ body.pos-delivero-active .kds-page .kds-summary > div {
 }
 
 body.pos-delivero-active .kds-card {
-  padding: 18px !important;
-  gap: 12px;
-  display: flex;
-  flex-direction: column;
+  padding: 20px !important;
+  border-radius: 20px !important;
+}
+
+/* ============================================================
+   PRODUCT IMAGE + PLACEHOLDER — clean minimalis (Brew Bean style)
+   ============================================================ */
+
+/* Product visual base */
+body.pos-delivero-active .product-visual {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: 16px;
+  overflow: hidden;
+  background: #EDEAFA;
+}
+
+body.pos-delivero-active .product-visual-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Clean minimalis placeholder — replaces the old purple/dark gradient */
+body.pos-delivero-active .product-visual-placeholder {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  gap: 6px;
+  padding: 12px;
+  text-align: center;
+  color: #1F3EC7;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif;
+  background: #F5F3FD;
+  position: relative;
+  isolation: isolate;
+}
+
+/* Tone-based clean backgrounds */
+body.pos-delivero-active .product-visual-coffee .product-visual-placeholder  { background: #EFE5D8; color: #7A4620; }
+body.pos-delivero-active .product-visual-food .product-visual-placeholder    { background: #FCE9D6; color: #A0500C; }
+body.pos-delivero-active .product-visual-fresh .product-visual-placeholder   { background: #E4F1E8; color: #2F6B45; }
+body.pos-delivero-active .product-visual-retail .product-visual-placeholder  { background: #E5EBF9; color: #1F3EC7; }
+body.pos-delivero-active .product-visual-default .product-visual-placeholder { background: #EFECFB; color: #4B2D8F; }
+
+/* Center icon glyph */
+body.pos-delivero-active .product-visual-placeholder .product-visual-icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1.5px solid currentColor;
+  color: currentColor;
+  background: transparent;
+  opacity: 0.9;
+}
+
+body.pos-delivero-active .product-visual-placeholder .product-visual-icon svg {
+  width: 22px;
+  height: 22px;
+  stroke-width: 1.8;
+}
+
+/* Wordmark SELASAR (uppercase pill) */
+body.pos-delivero-active .product-visual-placeholder .product-visual-brand {
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.28em;
+  color: currentColor;
+  opacity: 0.85;
+  margin-top: 2px;
+}
+
+/* Hide the long name/label duplicate on placeholder (kept for a11y) */
+body.pos-delivero-active .product-visual-placeholder strong,
+body.pos-delivero-active .product-visual-placeholder small {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ─── Menu Manager thumbnail — fixed small square ─────── */
+body.pos-delivero-active .menu-product-thumb {
+  width: 72px !important;
+  height: 72px !important;
+  border-radius: 14px !important;
+  overflow: hidden;
+  flex-shrink: 0;
+  border: 1px solid var(--delv-border);
+  background: var(--delv-card-soft);
+}
+
+body.pos-delivero-active .apple-table.menu-product-table td:first-child,
+body.pos-delivero-active .menu-product-table td:first-child {
+  width: 92px !important;
+  padding: 10px !important;
+}
+
+body.pos-delivero-active .menu-product-thumb .product-visual-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+body.pos-delivero-active .menu-product-thumb .product-visual-placeholder {
+  padding: 6px;
+  gap: 2px;
+}
+
+body.pos-delivero-active .menu-product-thumb .product-visual-icon {
+  width: 26px;
+  height: 26px;
+}
+
+body.pos-delivero-active .menu-product-thumb .product-visual-icon svg {
+  width: 14px;
+  height: 14px;
+}
+
+body.pos-delivero-active .menu-product-thumb .product-visual-brand {
+  font-size: 7px;
+  letter-spacing: 0.22em;
+}
+
+/* Product modal preview thumb — bigger but constrained */
+body.pos-delivero-active .product-modal-thumb {
+  width: 92px !important;
+  height: 92px !important;
+  border-radius: 16px !important;
+  overflow: hidden;
+  border: 1px solid var(--delv-border);
+  background: var(--delv-card-soft);
+  flex-shrink: 0;
+}
+
+body.pos-delivero-active .product-modal-thumb .product-visual-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+body.pos-delivero-active .product-modal-thumb .product-visual-icon {
+  width: 32px;
+  height: 32px;
+}
+
+body.pos-delivero-active .product-modal-thumb .product-visual-brand {
+  font-size: 8px;
 }
 
 body.pos-delivero-active .kds-card > div:first-child {
