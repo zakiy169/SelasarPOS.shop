@@ -1,0 +1,43 @@
+{
+  "summary": "Iterasi 2 verifikasi bug fixes untuk Kedai Kopi Selasar POS (React 19 + Vite, Delivero design). PASS: (1) PaymentModal mobile 414x900 SOLID white fullscreen — modal bg rgb(255,255,255), backdrop-filter=none, 414x900px, 4 payment methods & QRIS QR visible, Konfirmasi Lunas tap-able (regression fixed & stable). (2) PaymentModal desktop 1400x900 tetap centered card 620px, radius 24px, blur(6px) overlay. (3) Font BARU verified — body: Onest, headings: Fraunces. (4) Sidebar desktop menampilkan SEMUA menu termasuk Kasir (Transaksi: Kasir/Dapur/Meja; Operasional: Shift/Produk/Stok; Pelanggan: Member; Keuangan: Laporan; Perangkat: Pengaturan). (5) Header sticky = rgba(236,234,247,0.82) + blur(14px) saturate(1.4) frosted glass. (6) .member-mobile-card display:none pada desktop (0 visible), tidak duplikat. FAIL (regression baru dari fix yang salah): Reports & Loyalty page masih HORIZONTAL OVERFLOW ~240px pada desktop 1400px — KPI card ke-4 'Item terjual' terpotong (persis seperti keluhan user). Kolom TANGGAL GABUNG loyalty juga terpotong. RCA: DOUBLE margin-left 254px — `.app-container` sudah padding-left:254px untuk fixed sidebar, TAPI `.reports-page/.loyalty-page/.report-hub` (dan `.selasar-header`) menambahkan LAGI margin-left:254px di pos-delivero.css line 1335 & 1361. Efeknya .report-hub left=508, max-width=1132 → right=1640, overflow 240px pada viewport 1400. Solusi: hapus margin-left:254px di line 1335 (header) dan 1361 (content pages) karena parent .main-content sudah offset.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": ".reports-page / .report-hub", "issue": "Double margin-left:254px causing 240px horizontal overflow — 4th KPI card 'Item terjual' clipped on 1400px desktop viewport", "selector": "body.pos-delivero-active .report-hub", "priority": "HIGH"},
+      {"component": ".loyalty-page", "issue": "Same double margin-left issue — member table kolom 'TANGGAL GABUNG' terpotong di kanan viewport", "selector": "body.pos-delivero-active .loyalty-page", "priority": "HIGH"},
+      {"component": ".selasar-header", "issue": "margin-left:254px pada line 1335 juga rentan double-offset (currently visually aligns tapi menambah scrollWidth global). Header pills bleed di luar viewport secara horizontal.", "selector": "body.pos-delivero-active .selasar-header", "priority": "MEDIUM"}
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Reports (Laporan) desktop 1400px", "issues": ["4th KPI card 'Item terjual' terpotong sebelah kanan; scrollWidth=1640 vs clientWidth=1400"]},
+      {"screen": "Loyalty (Member) desktop 1400px", "issues": ["Tabel member overflow ke kanan, kolom terakhir terpotong; scrollWidth=1640"]}
+    ]
+  },
+  "test_report_links": [
+    "/app/test_reports/screens_iter2/01_pos_desktop.png",
+    "/app/test_reports/screens_iter2/02_loyalty_desktop.png",
+    "/app/test_reports/screens_iter2/03_reports_desktop.png",
+    "/app/test_reports/screens_iter2/04_payment_mobile.png",
+    "/app/test_reports/screens_iter2/05_payment_desktop.png"
+  ],
+  "action_items": [
+    "FIX in /app/src/styles/pos-delivero.css line 1361: HAPUS `margin-left: 254px;` dari selector group `.reports-page, .kds-page, .loyalty-page, .inventory-page, .table-management-page, .menu-manager-page, .receipt-settings-page, .settings-page, .shift-page, .report-hub`. Alasan: parent `.app-container` sudah punya padding-left:254px untuk menyediakan ruang bagi fixed sidebar. Tambahan margin-left menciptakan offset ganda → overflow 240px.",
+    "FIX line 1335: HAPUS `margin-left: 254px;` dari `.selasar-header` juga (parent sudah offset).",
+    "Setelah fix, `.report-hub` akan mulai di left=254 dengan max-width calc(100vw-268px)=1132 → right=1386, fit dalam viewport 1400. KPI grid `repeat(auto-fit, minmax(200px, 1fr))` akan wrap dengan benar sesuai request.",
+    "Verifikasi ulang: reports & loyalty scrollWidth should equal clientWidth (no horizontal scroll)."
+  ],
+  "critical_code_review_comments": [
+    "pos-delivero.css sudah ~2270 baris, mendekati soft cap 700 baris — pertimbangkan split per section (header, sidebar, payment-modal, pages, mobile).",
+    "Terlalu banyak !important di CSS (>50 instance dalam file). Ini indikasi specificity war; refactor selectors agar lebih spesifik daripada spam !important.",
+    "Double margin-left bug menunjukkan tidak ada single source-of-truth untuk sidebar-offset. Suggest CSS var `--sidebar-width: 254px` dan gunakan konsisten hanya di 1 tempat (parent container padding), jangan diulang di child pages.",
+    "`.selasar-header .header-left { display: none }` dan `.header-page-context { display: none }` — jika elemen tidak diperlukan, hapus dari JSX daripada di-hide via CSS."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A (skipped per request)", "frontend": "70% (7/10 assertions passed: fonts, sidebar-Kasir, header frosted, payment-mobile-solid, payment-desktop-card, loyalty-no-dup-mobile-card PASS; loyalty-overflow, reports-overflow, reports-kpi-clipped FAIL)"},
+  "test_credentials": "N/A — /preview-pos.html bypass Supabase.",
+  "seed_data_creation": "None.",
+  "retest_needed": true,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Payment modal mobile & desktop, fonts (Onest+Fraunces), sidebar Kasir menu, dan hide member-mobile-card duplicate SUDAH FIXED — jangan ubah. Yang masih broken: overflow horizontal di reports & loyalty pages karena double margin-left:254px pada pos-delivero.css line 1335 & 1361. Setelah main agent hapus 2 margin-left tersebut, retest dengan visit /preview-pos.html?view=reports dan ?view=loyalty pada viewport 1400x900, assert `document.documentElement.scrollWidth === document.documentElement.clientWidth` dan semua 4 KPI cards `getBoundingClientRect().right <= 1400`.",
+  "rca of the issue": "ROOT CAUSE: Double sidebar-offset. `.app-container` (parent) sudah punya `padding-left: 254px` yang menciptakan ruang untuk `.desktop-workspace-sidebar` (position:fixed, width:254px). Tetapi pos-delivero.css line 1361 juga menerapkan `margin-left: 254px` pada `.reports-page, .loyalty-page, .report-hub, dst.` — sehingga content bergeser 508px dari kiri viewport, lalu `max-width: calc(100vw - 268px) = 1132px` menghitung dari full 100vw (1400) BUKAN dari space yang tersisa (1400-508=892). Hasil: right edge = 508+1132 = 1640, overflow 240px. REPRODUCTION: (1) Buka http://localhost:5173/preview-pos.html?view=reports di viewport 1400x900. (2) Eval `document.documentElement.scrollWidth` → 1640. (3) 4th KPI card visible clipping di sebelah kanan. MITIGATION: Hapus `margin-left: 254px` di line 1361 (dan 1335 untuk header). Setelah fix: `.report-hub` left=254 (dari parent padding), max-width 1132 → right=1386 fit within 1400 viewport."
+}
