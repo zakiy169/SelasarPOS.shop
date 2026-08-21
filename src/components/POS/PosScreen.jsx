@@ -90,8 +90,8 @@ export const PosScreen = ({
 
   // Delivero-inspired POS theme is only enabled on this screen.
   useEffect(() => {
-    document.body.classList.add('pos-delivero-active');
-    return () => document.body.classList.remove('pos-delivero-active');
+    // Global Delivero design is now activated at the App root; this hook
+    // remains here as a defensive no-op in case the app is embedded elsewhere.
   }, []);
 
   // Emoji icon per category to render inside the Delivero-style category pills.

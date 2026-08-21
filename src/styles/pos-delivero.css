@@ -932,3 +932,1024 @@ body.pos-delivero-active .shift-lock-overlay {
     z-index: 240;
   }
 }
+
+/* ============================================================
+   GLOBAL DESIGN SYSTEM — applies to every screen
+   Login · PIN · Onboarding · KDS · Tables · Reports · Settings
+   · Menu Manager · Inventory · Loyalty · Shift · Modals
+   ============================================================ */
+
+/* Base body — override the previous dark cosmic background */
+body.pos-delivero-active {
+  background: var(--delv-page-bg) !important;
+  color: var(--delv-text) !important;
+
+  /* Redefine legacy design tokens so inline var() references from
+     component files inherit the Delivero palette automatically. */
+  --text-main: var(--delv-text);
+  --text-muted: var(--delv-text-muted);
+  --ink: var(--delv-text);
+  --bg-main: var(--delv-page-bg);
+  --bg-soft: var(--delv-card-soft);
+  --bg-card: #FFFFFF;
+  --bg-card-solid: #FFFFFF;
+  --border-color: var(--delv-border-strong);
+  --selasar-blue: var(--delv-primary);
+  --selasar-red: #E15F73;
+  --apple-blue: var(--delv-primary);
+  --apple-green: #2D8F52;
+  --apple-red: #C4283A;
+  --apple-yellow: #B48310;
+  --radius-xl: 24px;
+  --radius-lg: 20px;
+  --radius-md: 14px;
+  --glow: 0 12px 34px rgba(30, 20, 70, 0.08);
+  color-scheme: light;
+}
+
+body.pos-delivero-active::before,
+body.pos-delivero-active::after {
+  display: none !important;
+}
+
+body.pos-delivero-active input,
+body.pos-delivero-active select,
+body.pos-delivero-active textarea {
+  color: var(--delv-text) !important;
+  background: #FFFFFF !important;
+  border: 1px solid var(--delv-border-strong) !important;
+  border-radius: 12px !important;
+}
+
+body.pos-delivero-active input:focus,
+body.pos-delivero-active select:focus,
+body.pos-delivero-active textarea:focus {
+  border-color: var(--delv-primary) !important;
+  box-shadow: 0 0 0 4px rgba(75, 45, 143, 0.12) !important;
+}
+
+body.pos-delivero-active option {
+  background: #FFFFFF !important;
+  color: var(--delv-text) !important;
+}
+
+body.pos-delivero-active .app-container {
+  min-height: 100dvh;
+  padding-left: 254px;
+  background: var(--delv-page-bg);
+}
+
+body.pos-delivero-active .main-content {
+  background: var(--delv-page-bg);
+}
+
+/* ─── LOGIN SCREEN (LoginScreen.jsx) ────────────────────── */
+body.pos-delivero-active .login-screen {
+  background: var(--delv-page-bg) !important;
+  color: var(--delv-text);
+  min-height: 100dvh;
+  padding: 24px;
+}
+
+body.pos-delivero-active .login-screen::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background:
+    radial-gradient(circle at 15% 20%, rgba(75, 45, 143, 0.14), transparent 40%),
+    radial-gradient(circle at 85% 78%, rgba(255, 217, 59, 0.16), transparent 45%);
+}
+
+body.pos-delivero-active .selasar-login-topbar,
+body.pos-delivero-active .selasar-login-main,
+body.pos-delivero-active .selasar-login-stage,
+body.pos-delivero-active .selasar-login-copy,
+body.pos-delivero-active .selasar-login-security,
+body.pos-delivero-active .selasar-login-footer,
+body.pos-delivero-active .login-showcase {
+  color: var(--delv-text);
+}
+
+body.pos-delivero-active .login-kicker,
+body.pos-delivero-active .concept-eyebrow,
+body.pos-delivero-active .eyebrow {
+  color: var(--delv-primary) !important;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+body.pos-delivero-active .selasar-login-copy h1,
+body.pos-delivero-active .concept-login-copy h1 {
+  color: var(--delv-text) !important;
+  font-family: 'Playfair Display', Georgia, serif;
+  letter-spacing: -0.02em;
+}
+
+body.pos-delivero-active .selasar-login-copy h1 em,
+body.pos-delivero-active .concept-login-copy h1 em {
+  color: var(--delv-primary) !important;
+  font-style: italic;
+  font-weight: 700;
+}
+
+body.pos-delivero-active .selasar-login-copy p,
+body.pos-delivero-active .concept-login-copy > p {
+  color: var(--delv-text-muted) !important;
+}
+
+body.pos-delivero-active .login-atmosphere,
+body.pos-delivero-active .login-orbit {
+  border-color: rgba(75, 45, 143, 0.10) !important;
+}
+
+body.pos-delivero-active .selasar-google-button,
+body.pos-delivero-active .concept-google-button {
+  background: var(--delv-primary) !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 14px 28px rgba(75, 45, 143, 0.30) !important;
+  border-radius: 14px !important;
+  border: none;
+}
+
+body.pos-delivero-active .selasar-google-button:hover,
+body.pos-delivero-active .concept-google-button:hover {
+  background: var(--delv-primary-hover) !important;
+  filter: none;
+}
+
+body.pos-delivero-active .google-mark {
+  background: #FFFFFF !important;
+  color: var(--delv-primary) !important;
+}
+
+body.pos-delivero-active .login-order-card,
+body.pos-delivero-active .login-showcase,
+body.pos-delivero-active .login-ready-status,
+body.pos-delivero-active .login-sales-chip {
+  background: #FFFFFF !important;
+  border: 1px solid var(--delv-border) !important;
+  color: var(--delv-text) !important;
+  box-shadow: var(--delv-shadow-md) !important;
+  border-radius: 20px !important;
+}
+
+body.pos-delivero-active .login-card-heading,
+body.pos-delivero-active .login-card-mark,
+body.pos-delivero-active .login-card-top,
+body.pos-delivero-active .login-card-action,
+body.pos-delivero-active .login-card-total {
+  color: var(--delv-text) !important;
+}
+
+body.pos-delivero-active .login-order-icon {
+  background: var(--delv-primary-soft) !important;
+  color: var(--delv-primary) !important;
+}
+
+body.pos-delivero-active .login-order-icon.warm {
+  background: #FFF4CE !important;
+  color: #B48310 !important;
+}
+
+body.pos-delivero-active .login-showcase-label {
+  background: #FFFFFF !important;
+  color: var(--delv-text) !important;
+  border: 1px solid var(--delv-border) !important;
+  box-shadow: var(--delv-shadow-sm);
+}
+
+body.pos-delivero-active .login-proof-points span,
+body.pos-delivero-active .concept-benefits span {
+  color: var(--delv-text-muted) !important;
+}
+
+body.pos-delivero-active .selasar-login-security {
+  color: var(--delv-text-muted) !important;
+}
+
+body.pos-delivero-active .login-error {
+  background: #FFF0F0 !important;
+  color: #C4283A !important;
+  border: 1px solid rgba(196, 40, 58, 0.2) !important;
+  border-radius: 12px !important;
+  padding: 10px 14px;
+}
+
+/* ─── PIN GATE (LoginModal.jsx) ─────────────────────────── */
+body.pos-delivero-active .pin-gate {
+  background: var(--delv-page-bg) !important;
+}
+
+body.pos-delivero-active .pin-card {
+  background: #FFFFFF !important;
+  border: 1px solid var(--delv-border) !important;
+  border-radius: 26px !important;
+  box-shadow: var(--delv-shadow-lg) !important;
+  color: var(--delv-text) !important;
+  overflow: hidden;
+}
+
+body.pos-delivero-active .mac-window-bar {
+  background: var(--delv-card-soft) !important;
+  border-bottom: 1px solid var(--delv-border) !important;
+  color: var(--delv-text-muted) !important;
+}
+
+body.pos-delivero-active .pin-card-body {
+  color: var(--delv-text) !important;
+}
+
+body.pos-delivero-active .pin-icon {
+  background: var(--delv-primary) !important;
+  box-shadow: 0 12px 26px rgba(75, 45, 143, 0.32) !important;
+  color: #FFFFFF;
+}
+
+body.pos-delivero-active .pin-role-switcher {
+  background: var(--delv-card-soft) !important;
+  border-radius: 14px !important;
+  padding: 5px !important;
+}
+
+body.pos-delivero-active .pin-role-switcher button {
+  color: var(--delv-text-muted) !important;
+  border-radius: 10px !important;
+}
+
+body.pos-delivero-active .pin-role-switcher button.active {
+  background: #FFFFFF !important;
+  color: var(--delv-primary) !important;
+  box-shadow: var(--delv-shadow-sm);
+}
+
+body.pos-delivero-active .login-copy h2 {
+  color: var(--delv-text) !important;
+}
+
+body.pos-delivero-active .login-copy p:last-child,
+body.pos-delivero-active .pin-note {
+  color: var(--delv-text-muted) !important;
+}
+
+body.pos-delivero-active .pin-dots span {
+  background: var(--delv-primary-soft) !important;
+}
+
+body.pos-delivero-active .pin-dots span.filled {
+  background: var(--delv-primary) !important;
+  box-shadow: 0 0 12px rgba(75, 45, 143, 0.4) !important;
+}
+
+body.pos-delivero-active .pin-dots.has-error span {
+  background: #E15F73 !important;
+}
+
+body.pos-delivero-active .pin-keypad button {
+  background: var(--delv-card-soft) !important;
+  border: 1px solid var(--delv-border) !important;
+  color: var(--delv-text) !important;
+  border-radius: 14px !important;
+  font-weight: 800;
+  transition: transform 0.12s ease, background 0.12s ease;
+}
+
+body.pos-delivero-active .pin-keypad button:hover {
+  background: var(--delv-primary-soft) !important;
+  color: var(--delv-primary) !important;
+}
+
+body.pos-delivero-active .pin-keypad .pin-key-confirm {
+  background: var(--delv-primary) !important;
+  color: #FFFFFF !important;
+  border-color: var(--delv-primary) !important;
+  box-shadow: 0 10px 22px rgba(75, 45, 143, 0.28);
+}
+
+body.pos-delivero-active .pin-key-secondary {
+  color: var(--delv-text-muted) !important;
+}
+
+body.pos-delivero-active .pin-error {
+  color: #C4283A !important;
+}
+
+/* ─── ONBOARDING (OnboardingScreen.jsx) ─────────────────── */
+body.pos-delivero-active .macos-wallpaper {
+  background: var(--delv-page-bg) !important;
+}
+
+body.pos-delivero-active .macos-wallpaper-grain {
+  opacity: 0.06 !important;
+}
+
+body.pos-delivero-active .macos-wallpaper-orb {
+  filter: blur(60px) !important;
+  opacity: 0.35 !important;
+}
+
+body.pos-delivero-active .orb-blue { background: var(--delv-primary) !important; }
+body.pos-delivero-active .orb-lilac { background: #FFB84D !important; }
+body.pos-delivero-active .orb-sky { background: var(--delv-accent-green-2) !important; }
+
+body.pos-delivero-active .macos-overline {
+  color: var(--delv-primary) !important;
+}
+
+body.pos-delivero-active .onboarding-card,
+body.pos-delivero-active .onboarding-panel,
+body.pos-delivero-active .onboarding-panel-inner,
+body.pos-delivero-active .onboarding-sidebar {
+  background: #FFFFFF !important;
+  border: 1px solid var(--delv-border) !important;
+  border-radius: 26px !important;
+  color: var(--delv-text) !important;
+  box-shadow: var(--delv-shadow-md) !important;
+}
+
+body.pos-delivero-active .onboarding-brand,
+body.pos-delivero-active .onboarding-header,
+body.pos-delivero-active .onboarding-copy,
+body.pos-delivero-active .onboarding-user {
+  color: var(--delv-text) !important;
+}
+
+body.pos-delivero-active .onboarding-icon,
+body.pos-delivero-active .onboarding-avatar-fallback {
+  background: var(--delv-primary) !important;
+  color: #FFFFFF !important;
+  border-radius: 14px;
+}
+
+body.pos-delivero-active .onboarding-checklist li,
+body.pos-delivero-active .onboarding-fields label {
+  color: var(--delv-text) !important;
+}
+
+body.pos-delivero-active .apple-input {
+  background: var(--delv-card-soft) !important;
+  border: 1px solid var(--delv-border-strong) !important;
+  color: var(--delv-text) !important;
+  border-radius: 12px !important;
+}
+
+body.pos-delivero-active .onboarding-submit {
+  background: var(--delv-primary) !important;
+  color: #FFFFFF !important;
+  border-radius: 14px !important;
+  box-shadow: 0 12px 26px rgba(75, 45, 143, 0.28) !important;
+  border: none;
+}
+
+body.pos-delivero-active .onboarding-submit:hover {
+  background: var(--delv-primary-hover) !important;
+}
+
+/* ─── HEADER globally ───────────────────────────────────── */
+body.pos-delivero-active .selasar-header {
+  background: transparent !important;
+  border-bottom: none !important;
+  box-shadow: none !important;
+  padding: 18px 24px 8px !important;
+  margin-left: 254px;
+  min-height: 68px !important;
+}
+
+body.pos-delivero-active .selasar-header .header-left {
+  display: none !important;
+}
+
+body.pos-delivero-active .selasar-header .header-page-context {
+  display: none !important;
+}
+
+/* ─── OPERATIONAL PAGES (KDS/Tables/Reports/Menu/Inv/Loyalty/Shift/Settings) ─ */
+body.pos-delivero-active .reports-page,
+body.pos-delivero-active .kds-page,
+body.pos-delivero-active .loyalty-page,
+body.pos-delivero-active .inventory-page,
+body.pos-delivero-active .table-management-page,
+body.pos-delivero-active .menu-manager-page,
+body.pos-delivero-active .receipt-settings-page,
+body.pos-delivero-active .settings-page,
+body.pos-delivero-active .shift-page,
+body.pos-delivero-active .report-hub {
+  margin-left: 254px;
+  padding: 6px 24px 60px !important;
+  color: var(--delv-text) !important;
+  background: transparent !important;
+}
+
+/* Page hero / heading strip */
+body.pos-delivero-active .reports-heading,
+body.pos-delivero-active .kds-heading,
+body.pos-delivero-active .loyalty-heading,
+body.pos-delivero-active .inventory-heading,
+body.pos-delivero-active .tables-header,
+body.pos-delivero-active .menu-manager-heading,
+body.pos-delivero-active .receipt-settings-heading,
+body.pos-delivero-active .settings-hero,
+body.pos-delivero-active .report-hub-header {
+  background: linear-gradient(135deg, #5A3AA5 0%, #4B2D8F 60%, #6B3EA8 100%) !important;
+  border: none !important;
+  border-radius: var(--delv-radius) !important;
+  padding: 22px 26px !important;
+  box-shadow: 0 14px 40px rgba(75, 45, 143, 0.20) !important;
+  color: #FFFFFF !important;
+  margin-bottom: 20px !important;
+  position: relative;
+  overflow: hidden;
+}
+
+body.pos-delivero-active .reports-heading::after,
+body.pos-delivero-active .kds-heading::after,
+body.pos-delivero-active .settings-hero::after,
+body.pos-delivero-active .report-hub-header::after {
+  content: '';
+  position: absolute;
+  right: -30px;
+  top: -30px;
+  width: 180px;
+  height: 180px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 217, 59, 0.30), transparent 65%);
+  pointer-events: none;
+}
+
+body.pos-delivero-active .reports-heading h2,
+body.pos-delivero-active .kds-heading h2,
+body.pos-delivero-active .loyalty-heading h2,
+body.pos-delivero-active .inventory-heading h2,
+body.pos-delivero-active .tables-header h2,
+body.pos-delivero-active .menu-manager-heading h2,
+body.pos-delivero-active .receipt-settings-heading h2,
+body.pos-delivero-active .settings-hero h2,
+body.pos-delivero-active .report-hub-header h2,
+body.pos-delivero-active .shift-page h2 {
+  color: #FFFFFF !important;
+  font-family: 'Playfair Display', Georgia, serif;
+  font-weight: 800;
+  position: relative;
+  z-index: 1;
+}
+
+body.pos-delivero-active .reports-heading p,
+body.pos-delivero-active .kds-heading p,
+body.pos-delivero-active .loyalty-heading p,
+body.pos-delivero-active .inventory-heading p,
+body.pos-delivero-active .tables-header p,
+body.pos-delivero-active .menu-manager-heading p,
+body.pos-delivero-active .receipt-settings-heading p,
+body.pos-delivero-active .settings-hero p,
+body.pos-delivero-active .report-hub-header > div > span,
+body.pos-delivero-active .shift-page h2 + p {
+  color: rgba(255, 255, 255, 0.82) !important;
+  position: relative;
+  z-index: 1;
+}
+
+body.pos-delivero-active .settings-kicker,
+body.pos-delivero-active .report-eyebrow {
+  color: #FFD93B !important;
+  position: relative;
+  z-index: 1;
+}
+
+/* Cards, panels, surfaces */
+body.pos-delivero-active .apple-table-container,
+body.pos-delivero-active .member-table-panel,
+body.pos-delivero-active .report-panel,
+body.pos-delivero-active .report-metric,
+body.pos-delivero-active .report-card,
+body.pos-delivero-active .settings-surface,
+body.pos-delivero-active .settings-account-card,
+body.pos-delivero-active .settings-subsection,
+body.pos-delivero-active .app-info-card,
+body.pos-delivero-active .settings-danger-card,
+body.pos-delivero-active .shift-card,
+body.pos-delivero-active .table-card,
+body.pos-delivero-active .kds-card,
+body.pos-delivero-active .report-kpi-card,
+body.pos-delivero-active .member-mobile-card {
+  background: #FFFFFF !important;
+  border: 1px solid var(--delv-border) !important;
+  border-radius: var(--delv-radius) !important;
+  box-shadow: var(--delv-shadow-sm) !important;
+  color: var(--delv-text) !important;
+  backdrop-filter: none !important;
+}
+
+body.pos-delivero-active .kds-card:hover,
+body.pos-delivero-active .table-card:hover {
+  box-shadow: var(--delv-shadow-md) !important;
+  transform: translateY(-2px);
+  transition: all 0.2s ease;
+}
+
+body.pos-delivero-active .kds-card h3,
+body.pos-delivero-active .table-card h3,
+body.pos-delivero-active .report-kpi-card h3,
+body.pos-delivero-active .settings-surface-title,
+body.pos-delivero-active .settings-card-heading {
+  color: var(--delv-text) !important;
+}
+
+body.pos-delivero-active .kds-card p,
+body.pos-delivero-active .table-card p,
+body.pos-delivero-active .report-kpi-card p {
+  color: var(--delv-text-muted) !important;
+}
+
+body.pos-delivero-active .settings-surface-title svg,
+body.pos-delivero-active .settings-card-heading svg {
+  color: var(--delv-primary) !important;
+}
+
+/* Tables */
+body.pos-delivero-active .apple-table th,
+body.pos-delivero-active .member-table th,
+body.pos-delivero-active .report-data-table th {
+  color: var(--delv-text-muted) !important;
+  background: var(--delv-card-soft) !important;
+  border-bottom: 1px solid var(--delv-border) !important;
+}
+
+body.pos-delivero-active .apple-table td,
+body.pos-delivero-active .member-table td,
+body.pos-delivero-active .report-data-table td {
+  color: var(--delv-text) !important;
+  border-top: 1px solid var(--delv-border) !important;
+}
+
+body.pos-delivero-active .apple-table tr:hover td,
+body.pos-delivero-active .member-table tr:hover td {
+  background: var(--delv-primary-soft) !important;
+}
+
+body.pos-delivero-active .report-metric > span,
+body.pos-delivero-active .report-metric small {
+  color: var(--delv-text-muted) !important;
+}
+
+body.pos-delivero-active .report-metric strong {
+  color: var(--delv-text) !important;
+}
+
+body.pos-delivero-active .report-metric.green strong,
+body.pos-delivero-active .positive {
+  color: #2D8F52 !important;
+}
+
+body.pos-delivero-active .report-metric.red strong,
+body.pos-delivero-active .negative {
+  color: #C4283A !important;
+}
+
+/* Buttons — primary & secondary */
+body.pos-delivero-active .btn-primary,
+body.pos-delivero-active .receipt-action,
+body.pos-delivero-active .table-action-button,
+body.pos-delivero-active .report-primary-action,
+body.pos-delivero-active .settings-save-button,
+body.pos-delivero-active .expense-save {
+  background: var(--delv-primary) !important;
+  color: #FFFFFF !important;
+  border: none !important;
+  border-radius: 14px !important;
+  box-shadow: 0 10px 24px rgba(75, 45, 143, 0.24) !important;
+  font-weight: 800 !important;
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+
+body.pos-delivero-active .btn-primary:hover:not(:disabled),
+body.pos-delivero-active .settings-save-button:hover:not(:disabled) {
+  background: var(--delv-primary-hover) !important;
+  transform: translateY(-1px);
+}
+
+body.pos-delivero-active .settings-save-button.is-saved {
+  background: linear-gradient(105deg, #2CBD83, #64DFAE) !important;
+}
+
+body.pos-delivero-active .report-secondary-action,
+body.pos-delivero-active .expense-cancel,
+body.pos-delivero-active .inventory-restock-button,
+body.pos-delivero-active .member-edit-button,
+body.pos-delivero-active .report-text-button {
+  background: var(--delv-primary-soft) !important;
+  color: var(--delv-primary) !important;
+  border: 1px solid var(--delv-border-strong) !important;
+  border-radius: 12px !important;
+}
+
+body.pos-delivero-active .inventory-icon-button,
+body.pos-delivero-active .icon-action,
+body.pos-delivero-active .modal-close {
+  background: var(--delv-card-soft) !important;
+  border: 1px solid var(--delv-border) !important;
+  color: var(--delv-text) !important;
+  border-radius: 12px !important;
+}
+
+body.pos-delivero-active .report-icon-danger {
+  background: #FFF0F0 !important;
+  color: #C4283A !important;
+}
+
+/* Section navs */
+body.pos-delivero-active .settings-section-nav,
+body.pos-delivero-active .report-filter-bar,
+body.pos-delivero-active .report-hub-nav button,
+body.pos-delivero-active .report-period-tabs {
+  background: #FFFFFF !important;
+  border: 1px solid var(--delv-border) !important;
+  border-radius: 16px !important;
+  color: var(--delv-text-muted);
+}
+
+body.pos-delivero-active .settings-section-nav button,
+body.pos-delivero-active .report-period-tabs button {
+  color: var(--delv-text-muted) !important;
+  background: transparent !important;
+  border-radius: 10px !important;
+}
+
+body.pos-delivero-active .settings-section-nav button.active,
+body.pos-delivero-active .report-period-tabs button.active {
+  background: var(--delv-primary) !important;
+  color: #FFFFFF !important;
+}
+
+body.pos-delivero-active .report-hub-nav button {
+  border-radius: 16px !important;
+  color: var(--delv-text) !important;
+}
+
+body.pos-delivero-active .report-hub-nav button.active,
+body.pos-delivero-active .report-hub-nav button:hover {
+  background: var(--delv-primary-soft) !important;
+  border-color: var(--delv-primary) !important;
+}
+
+body.pos-delivero-active .report-hub-nav button > svg:first-child {
+  background: var(--delv-primary-soft) !important;
+  color: var(--delv-primary) !important;
+}
+
+body.pos-delivero-active .report-hub-nav button.active > svg:first-child {
+  background: var(--delv-primary) !important;
+  color: #FFFFFF !important;
+}
+
+body.pos-delivero-active .report-hub-nav b {
+  color: var(--delv-text) !important;
+}
+
+body.pos-delivero-active .report-hub-nav small {
+  color: var(--delv-text-muted) !important;
+}
+
+/* Sales bar chart */
+body.pos-delivero-active .sales-bars i {
+  background: linear-gradient(180deg, #7A57C4, var(--delv-primary)) !important;
+  box-shadow: 0 6px 14px rgba(75, 45, 143, 0.22) !important;
+}
+
+body.pos-delivero-active .sales-bars b {
+  color: var(--delv-text) !important;
+}
+
+body.pos-delivero-active .sales-bars span {
+  color: var(--delv-text-muted) !important;
+}
+
+body.pos-delivero-active .report-breakdown i {
+  background: linear-gradient(90deg, var(--delv-primary), var(--delv-accent-yellow)) !important;
+}
+
+body.pos-delivero-active .report-breakdown span {
+  color: var(--delv-text-muted) !important;
+}
+
+body.pos-delivero-active .report-breakdown b {
+  color: var(--delv-text) !important;
+}
+
+/* Status badges (KDS) */
+body.pos-delivero-active .status-pending,
+body.pos-delivero-active .status-new {
+  border-color: rgba(255, 184, 77, 0.5) !important;
+  background: linear-gradient(135deg, #FFF9EA, #FFF3D4) !important;
+}
+
+body.pos-delivero-active .status-preparing {
+  border-color: rgba(75, 45, 143, 0.4) !important;
+  background: var(--delv-primary-soft) !important;
+}
+
+body.pos-delivero-active .status-completed {
+  border-color: rgba(45, 143, 82, 0.4) !important;
+  background: #E9F5EC !important;
+}
+
+/* Modal */
+body.pos-delivero-active .modal-overlay {
+  background: rgba(30, 20, 70, 0.45) !important;
+  backdrop-filter: blur(10px);
+}
+
+body.pos-delivero-active .modal-card {
+  background: #FFFFFF !important;
+  border: 1px solid var(--delv-border) !important;
+  border-radius: 24px !important;
+  color: var(--delv-text) !important;
+  box-shadow: var(--delv-shadow-lg) !important;
+}
+
+body.pos-delivero-active .modal-header {
+  background: linear-gradient(135deg, #F7F5FE 0%, #FFFFFF 100%) !important;
+  border-bottom: 1px solid var(--delv-border) !important;
+  color: var(--delv-text) !important;
+}
+
+body.pos-delivero-active .modal-header h3 {
+  color: var(--delv-text) !important;
+  font-family: 'Playfair Display', Georgia, serif;
+}
+
+body.pos-delivero-active .modal-header p {
+  color: var(--delv-text-muted) !important;
+}
+
+body.pos-delivero-active .modal-header button {
+  background: var(--delv-card-soft) !important;
+  color: var(--delv-text) !important;
+}
+
+body.pos-delivero-active .modal-body {
+  color: var(--delv-text) !important;
+  background: #FFFFFF !important;
+}
+
+body.pos-delivero-active .modal-body label {
+  color: var(--delv-text-muted) !important;
+}
+
+body.pos-delivero-active .modal-body input,
+body.pos-delivero-active .modal-body select,
+body.pos-delivero-active .modal-body textarea {
+  background: var(--delv-card-soft) !important;
+  border-color: var(--delv-border-strong) !important;
+  color: var(--delv-text) !important;
+}
+
+body.pos-delivero-active .modal-footer {
+  background: var(--delv-card-soft) !important;
+  border-top: 1px solid var(--delv-border) !important;
+}
+
+/* Payment modal */
+body.pos-delivero-active .payment-method-card {
+  background: #FFFFFF !important;
+  border: 1px solid var(--delv-border-strong) !important;
+  color: var(--delv-text) !important;
+  border-radius: 16px !important;
+}
+
+body.pos-delivero-active .payment-method-card:hover,
+body.pos-delivero-active .payment-method-card.selected {
+  background: var(--delv-primary-soft) !important;
+  border-color: var(--delv-primary) !important;
+}
+
+body.pos-delivero-active .payment-method-card.selected > div:first-child {
+  background: var(--delv-primary) !important;
+  color: #FFFFFF !important;
+}
+
+body.pos-delivero-active .cash-quick-btn {
+  background: var(--delv-card-soft) !important;
+  color: var(--delv-text) !important;
+  border: 1px solid var(--delv-border-strong) !important;
+}
+
+body.pos-delivero-active .payment-total-panel {
+  background: linear-gradient(135deg, var(--delv-primary-soft), #FFFFFF) !important;
+  border-color: var(--delv-primary) !important;
+  color: var(--delv-text) !important;
+}
+
+/* Filter bar inputs */
+body.pos-delivero-active .report-filter-bar > label {
+  background: var(--delv-card-soft) !important;
+  border-color: var(--delv-border-strong) !important;
+  color: var(--delv-text) !important;
+}
+
+body.pos-delivero-active .report-filter-bar input {
+  color: var(--delv-text) !important;
+}
+
+body.pos-delivero-active .report-filter-bar > div:last-child button {
+  background: var(--delv-card-soft) !important;
+  color: var(--delv-text) !important;
+  border-color: var(--delv-border-strong) !important;
+}
+
+body.pos-delivero-active .report-search {
+  background: var(--delv-card-soft) !important;
+  border-color: var(--delv-border-strong) !important;
+  color: var(--delv-text-muted) !important;
+}
+
+body.pos-delivero-active .report-search input {
+  color: var(--delv-text) !important;
+}
+
+/* Cashflow / movement / stock / shift lists */
+body.pos-delivero-active .cashflow-list article,
+body.pos-delivero-active .movement-list > div,
+body.pos-delivero-active .stock-list > div,
+body.pos-delivero-active .shift-report-list article {
+  background: #FFFFFF !important;
+  border: 1px solid var(--delv-border) !important;
+  border-radius: 14px !important;
+  color: var(--delv-text) !important;
+}
+
+body.pos-delivero-active .cashflow-list b,
+body.pos-delivero-active .movement-list b,
+body.pos-delivero-active .stock-list b,
+body.pos-delivero-active .shift-report-list b {
+  color: var(--delv-text) !important;
+}
+
+body.pos-delivero-active .cashflow-list small,
+body.pos-delivero-active .movement-list small,
+body.pos-delivero-active .stock-list small,
+body.pos-delivero-active .shift-report-list span {
+  color: var(--delv-text-muted) !important;
+}
+
+body.pos-delivero-active .cashflow-list article > span {
+  background: #E9F5EC !important;
+  color: #2D8F52 !important;
+}
+
+body.pos-delivero-active .cashflow-list article > span.out,
+body.pos-delivero-active .movement-list > div > span.out {
+  background: #FFEDF0 !important;
+  color: #C4283A !important;
+}
+
+body.pos-delivero-active .shift-report-values span {
+  background: var(--delv-card-soft) !important;
+  color: var(--delv-text-muted) !important;
+}
+
+body.pos-delivero-active .shift-report-values b {
+  color: var(--delv-text) !important;
+}
+
+body.pos-delivero-active .shift-report-list em {
+  background: #FFF4CE !important;
+  color: #B48310 !important;
+}
+
+body.pos-delivero-active .shift-report-list em.active {
+  background: #E9F5EC !important;
+  color: #2D8F52 !important;
+}
+
+/* Expense form */
+body.pos-delivero-active .expense-field {
+  color: var(--delv-text-muted) !important;
+}
+
+body.pos-delivero-active .expense-money-input {
+  background: var(--delv-card-soft) !important;
+  border-color: var(--delv-border-strong) !important;
+}
+
+body.pos-delivero-active .expense-money-input b {
+  color: var(--delv-primary) !important;
+}
+
+/* Theme grid (Settings) */
+body.pos-delivero-active .settings-theme-grid button,
+body.pos-delivero-active .settings-font-grid button {
+  background: #FFFFFF !important;
+  border: 1px solid var(--delv-border-strong) !important;
+  color: var(--delv-text) !important;
+}
+
+body.pos-delivero-active .settings-google-account {
+  background: var(--delv-card-soft) !important;
+  border-color: var(--delv-border) !important;
+}
+
+body.pos-delivero-active .settings-google-account strong {
+  color: var(--delv-text) !important;
+}
+
+body.pos-delivero-active .settings-google-account span,
+body.pos-delivero-active .settings-google-account small {
+  color: var(--delv-text-muted) !important;
+}
+
+/* Success screen (already green, keep it but tweak checkout style) */
+body.pos-delivero-active .success-continue {
+  background: #FFFFFF !important;
+  color: #2D8F52 !important;
+  box-shadow: 0 14px 30px rgba(0, 40, 20, 0.20) !important;
+}
+
+/* Mobile bottom nav — light theme */
+body.pos-delivero-active .mobile-bottom-nav {
+  background: #FFFFFF !important;
+  border: 1px solid var(--delv-border) !important;
+  box-shadow: 0 -8px 30px rgba(30, 20, 70, 0.10) !important;
+}
+
+body.pos-delivero-active .mobile-bottom-nav button {
+  color: var(--delv-text-muted) !important;
+}
+
+body.pos-delivero-active .mobile-bottom-nav button.active {
+  background: var(--delv-primary) !important;
+  color: #FFFFFF !important;
+}
+
+/* Mobile workspace sheet */
+body.pos-delivero-active .mobile-workspace-overlay {
+  background: rgba(30, 20, 70, 0.45) !important;
+}
+
+body.pos-delivero-active .mobile-workspace-sheet {
+  background: #FFFFFF !important;
+  border: 1px solid var(--delv-border) !important;
+  color: var(--delv-text) !important;
+}
+
+body.pos-delivero-active .nav-sheet-heading strong {
+  color: var(--delv-text) !important;
+}
+
+body.pos-delivero-active .nav-sheet-heading span,
+body.pos-delivero-active .nav-group-label {
+  color: var(--delv-text-muted) !important;
+}
+
+body.pos-delivero-active .nav-btn,
+body.pos-delivero-active .mobile-only-nav-action {
+  background: var(--delv-card-soft) !important;
+  border-color: var(--delv-border) !important;
+  color: var(--delv-text) !important;
+}
+
+body.pos-delivero-active .nav-btn.active {
+  background: var(--delv-primary) !important;
+  color: #FFFFFF !important;
+  border-color: var(--delv-primary) !important;
+}
+
+body.pos-delivero-active .nav-icon {
+  background: var(--delv-primary-soft) !important;
+  color: var(--delv-primary) !important;
+}
+
+body.pos-delivero-active .nav-btn.active .nav-icon {
+  background: rgba(255, 255, 255, 0.2) !important;
+  color: #FFFFFF !important;
+}
+
+body.pos-delivero-active .mobile-logout-nav {
+  color: #C4283A !important;
+}
+
+body.pos-delivero-active .mobile-logout-nav .nav-icon {
+  background: #FFEDF0 !important;
+  color: #C4283A !important;
+}
+
+/* Non-POS pages should not have the left margin from sidebar override at mobile */
+@media (max-width: 1080px) {
+  body.pos-delivero-active .app-container {
+    padding-left: 0 !important;
+  }
+  body.pos-delivero-active .selasar-header,
+  body.pos-delivero-active .pos-layout,
+  body.pos-delivero-active .reports-page,
+  body.pos-delivero-active .kds-page,
+  body.pos-delivero-active .loyalty-page,
+  body.pos-delivero-active .inventory-page,
+  body.pos-delivero-active .table-management-page,
+  body.pos-delivero-active .menu-manager-page,
+  body.pos-delivero-active .receipt-settings-page,
+  body.pos-delivero-active .settings-page,
+  body.pos-delivero-active .shift-page,
+  body.pos-delivero-active .report-hub {
+    margin-left: 0 !important;
+  }
+}

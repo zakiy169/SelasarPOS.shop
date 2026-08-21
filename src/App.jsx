@@ -1244,6 +1244,14 @@ export function App() {
     return () => { void supabase.removeChannel(channel); };
   }, [activeOrganizationId, cloudReady]);
 
+  // Delivero-inspired design system is applied globally so every screen
+  // (login, PIN gate, onboarding, POS and every other tab) shares the same
+  // brand feel. Business logic and Supabase flow are not touched by this.
+  useEffect(() => {
+    document.body.classList.add('pos-delivero-active');
+    return () => document.body.classList.remove('pos-delivero-active');
+  }, []);
+
   // ── Apply theme + font to DOM ────────────────────────────────────────────
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
