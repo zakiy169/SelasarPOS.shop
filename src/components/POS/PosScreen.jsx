@@ -94,6 +94,13 @@ export const PosScreen = ({
     // remains here as a defensive no-op in case the app is embedded elsewhere.
   }, []);
 
+  // Rotating promo banner slide — 3 designs, auto-cycle every 5s.
+  const [bannerSlideIdx, setBannerSlideIdx] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => setBannerSlideIdx(i => (i + 1) % 3), 5000);
+    return () => clearInterval(t);
+  }, []);
+
   // Emoji icon per category to render inside the Delivero-style category pills.
   const CATEGORY_ICON = {
     all: '☕',
@@ -294,13 +301,35 @@ export const PosScreen = ({
           <aside><small>Shift aktif</small><strong>{activeShift?.shiftType || activeShift?.name || 'Belum dibuka'}</strong><span>{activeShift?.baristaName || activeShift?.name || 'Buka shift untuk mulai'}</span></aside>
         </header>
 
-        {/* Delivero-style promo banner */}
-        <div className="pos-delv-banner" role="img" aria-label="Menu spesial hari ini">
-          <span className="pos-delv-banner-tag">Kedai Kopi Selasar</span>
-          <h3>Menu of<em>The Day — Kopi Selasar Aren</em></h3>
-          <p>Signature Selasar · Fresh Milk & Gula Aren Organik</p>
-          <div className="pos-delv-banner-decor" aria-hidden="true">☕</div>
-        </div>
+        {/* Delivero-style animated promo banner — rotates 3 slides */}
+        {(() => {
+          const slides = [
+            { tag: 'SIGNATURE', title: 'KOPI SELASAR', em: 'Aren · Fresh Milk', sub: 'Signature blend · racikan hari ini', icon: '☕' },
+            { tag: 'PROMO HARI INI', title: 'CROFFLE + LATTE', em: '−20% Bundling', sub: 'Berlaku 07:00 – 15:00 setiap hari', icon: '🥐' },
+            { tag: 'BARU', title: 'MATCHA SELASAR', em: 'Premium Ceremonial', sub: 'Rasa umami · tanpa tambahan gula', icon: '🍵' },
+          ];
+          const s = slides[bannerSlideIdx];
+          return (
+            <div className="pos-delv-banner" key={bannerSlideIdx} role="img" aria-label={`Promo: ${s.title} ${s.em}`}>
+              <span className="pos-delv-banner-tag">{s.tag}</span>
+              <h3>{s.title}<em>{s.em}</em></h3>
+              <p>{s.sub}</p>
+              <div className="pos-delv-banner-cta">Order<br/>Cepat</div>
+              <div className="pos-delv-banner-decor" aria-hidden="true">{s.icon}</div>
+              <div className="pos-delv-banner-dots">
+                {[0,1,2].map(i => (
+                  <button
+                    key={i}
+                    type="button"
+                    className={i === bannerSlideIdx ? 'active' : ''}
+                    onClick={() => setBannerSlideIdx(i)}
+                    aria-label={`Slide ${i + 1}`}
+                  />
+                ))}
+              </div>
+            </div>
+          );
+        })()}
 
         <div className="pos-delv-section-title">
           <h4>Kategori</h4>

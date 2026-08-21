@@ -87,12 +87,12 @@ body.pos-delivero-active .desktop-workspace-sidebar::after {
   bottom: 12px;
   left: 20px;
   right: 20px;
-  height: 96px;
-  border-radius: 16px;
+  height: 132px;
+  border-radius: 18px;
   background:
-    linear-gradient(140deg, rgba(255, 217, 59, 0.15), rgba(75, 122, 62, 0.28)),
-    radial-gradient(circle at 25% 30%, #FFB84D 0%, transparent 55%),
-    #2E1560;
+    linear-gradient(140deg, rgba(31, 62, 199, 0.55) 0%, transparent 60%),
+    radial-gradient(circle at 75% 30%, #FFB84D 0%, transparent 55%),
+    #1F3EC7;
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
   pointer-events: none;
 }
@@ -100,7 +100,7 @@ body.pos-delivero-active .desktop-workspace-sidebar::after {
 body.pos-delivero-active .desktop-sidebar-scroll {
   color: var(--delv-sidebar-text);
   padding: 0 !important;
-  padding-bottom: 118px !important;
+  padding-bottom: 158px !important;
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
@@ -338,84 +338,178 @@ body.pos-delivero-active .pos-delv-banner {
   position: relative;
   display: block;
   border-radius: var(--delv-radius);
-  padding: 26px 30px;
-  min-height: 148px;
+  padding: 32px 34px;
+  min-height: 200px;
   margin-bottom: 22px;
   overflow: hidden;
-  background:
-    radial-gradient(circle at 85% 40%, rgba(255, 217, 59, 0.22), transparent 55%),
-    linear-gradient(120deg, #3D6432 0%, #5A8B47 55%, #6EA758 100%);
+  background: #1F3EC7;
   color: #FFFFFF;
-  box-shadow: var(--delv-shadow-md);
+  box-shadow: 0 18px 44px rgba(31, 62, 199, 0.28);
+  isolation: isolate;
 }
 
+/* Rotating gradient background across 3 slides */
 body.pos-delivero-active .pos-delv-banner::before {
   content: '';
   position: absolute;
-  right: -30px;
-  top: -20px;
-  width: 240px;
-  height: 200px;
+  inset: 0;
+  z-index: 0;
   background:
-    radial-gradient(circle at 40% 50%, #FFB84D 0%, #FF8A3D 40%, transparent 65%);
-  border-radius: 50%;
-  opacity: 0.55;
-  filter: blur(6px);
+    linear-gradient(115deg, #1F3EC7 0%, #2952E0 45%, #4B7EFF 100%);
+  animation: selasar-banner-bg 15s ease-in-out infinite;
+}
+
+/* Diagonal checkerboard accent stripe (Plates Meal style) */
+body.pos-delivero-active .pos-delv-banner::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 24px;
+  z-index: 1;
+  background:
+    repeating-linear-gradient(90deg,
+      #FFFFFF 0 20px,
+      #1F3EC7 20px 40px);
+  transform: skewY(-2deg) translateY(6px);
+  opacity: 0.95;
+}
+
+@keyframes selasar-banner-bg {
+  0%, 33%   { filter: hue-rotate(0deg); }
+  40%, 63%  { filter: hue-rotate(-25deg) saturate(1.15); }
+  70%, 100% { filter: hue-rotate(-45deg) saturate(1.05); }
+}
+
+@keyframes selasar-banner-slide-in {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: none; }
 }
 
 body.pos-delivero-active .pos-delv-banner .pos-delv-banner-tag {
-  display: inline-block;
-  padding: 5px 12px;
+  position: relative;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px 6px 6px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.16);
-  backdrop-filter: blur(6px);
+  background: rgba(255, 255, 255, 0.14);
+  backdrop-filter: blur(10px);
   color: #FFFFFF;
   font-size: 10px;
   font-weight: 800;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
-  margin-bottom: 12px;
+  margin-bottom: 14px;
+}
+
+body.pos-delivero-active .pos-delv-banner .pos-delv-banner-tag::before {
+  content: '';
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #FFD93B;
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.15);
+  display: inline-block;
 }
 
 body.pos-delivero-active .pos-delv-banner h3 {
+  position: relative;
+  z-index: 2;
   font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif;
   font-weight: 900;
-  font-size: 32px;
-  line-height: 1;
-  margin: 0 0 6px 0;
+  font-size: 42px;
+  line-height: 0.94;
+  margin: 0 0 8px 0;
   color: #FFFFFF;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: -0.03em;
+  max-width: 58%;
+  animation: selasar-banner-slide-in 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) both;
 }
 
 body.pos-delivero-active .pos-delv-banner h3 em {
+  position: relative;
+  display: inline-block;
   font-style: italic;
-  font-weight: 700;
-  color: #FFE58A;
-  display: block;
-  font-size: 18px;
-  margin-top: 2px;
+  font-weight: 900;
+  color: #FFD93B;
+  font-size: 24px;
+  margin-top: 6px;
+  padding: 2px 10px;
+  background: rgba(31, 62, 199, 0.55);
+  border-radius: 4px;
+  line-height: 1;
 }
 
 body.pos-delivero-active .pos-delv-banner p {
-  color: rgba(255, 255, 255, 0.85);
+  position: relative;
+  z-index: 2;
+  color: rgba(255, 255, 255, 0.86);
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  margin: 8px 0 0 0;
-  max-width: 340px;
+  margin: 14px 0 0 0;
+  max-width: 55%;
 }
 
 body.pos-delivero-active .pos-delv-banner-decor {
   position: absolute;
-  right: 24px;
+  right: 30px;
   top: 50%;
   transform: translateY(-50%);
-  font-size: 78px;
-  filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.28));
   z-index: 2;
+  width: 148px;
+  height: 148px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 35% 35%, #FFE58A 0%, #FFB84D 45%, #E88A2E 90%);
+  box-shadow:
+    0 20px 40px rgba(255, 154, 46, 0.4),
+    inset 0 -12px 24px rgba(180, 90, 20, 0.28);
+  display: grid;
+  place-items: center;
+  font-size: 78px;
   line-height: 1;
+  filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.25));
+  animation: selasar-banner-orb-float 6s ease-in-out infinite;
+}
+
+@keyframes selasar-banner-orb-float {
+  0%, 100% { transform: translateY(-50%) rotate(0deg); }
+  50%      { transform: translateY(-56%) rotate(6deg); }
+}
+
+/* Quick order button chip */
+body.pos-delivero-active .pos-delv-banner-cta {
+  position: absolute;
+  right: 220px;
+  bottom: 40px;
+  z-index: 3;
+  width: 74px;
+  height: 74px;
+  border-radius: 50%;
+  background: #FFFFFF;
+  color: #1F3EC7;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: 0.02em;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.18);
+  border: 3px solid #FFD93B;
+  transform: rotate(-8deg);
+  animation: selasar-banner-cta-pulse 3s ease-in-out infinite;
+}
+
+@keyframes selasar-banner-cta-pulse {
+  0%, 100% { transform: rotate(-8deg) scale(1); }
+  50%      { transform: rotate(-4deg) scale(1.05); }
 }
 
 /* Search bar (in filter area) */
@@ -553,15 +647,15 @@ body.pos-delivero-active .category-pill.active span {
 /* Products Grid */
 body.pos-delivero-active .products-grid {
   display: grid !important;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)) !important;
-  gap: 16px !important;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)) !important;
+  gap: 20px !important;
   padding: 0 !important;
 }
 
 body.pos-delivero-active .product-card {
   background: #FFFFFF !important;
   border: 1px solid var(--delv-border) !important;
-  border-radius: var(--delv-radius) !important;
+  border-radius: 22px !important;
   overflow: hidden;
   box-shadow: var(--delv-shadow-sm);
   transition: transform 0.18s ease, box-shadow 0.18s ease;
@@ -570,14 +664,14 @@ body.pos-delivero-active .product-card {
 }
 
 body.pos-delivero-active .product-card:hover {
-  transform: translateY(-4px);
-  box-shadow: var(--delv-shadow-lg);
+  transform: translateY(-6px);
+  box-shadow: 0 22px 44px rgba(30, 20, 70, 0.14);
   border-color: var(--delv-border-strong) !important;
 }
 
 body.pos-delivero-active .product-img-wrapper {
-  background: var(--delv-card-soft) !important;
-  padding: 10px !important;
+  background: linear-gradient(135deg, #F5F3FD 0%, #EDEAFA 100%) !important;
+  padding: 14px !important;
   aspect-ratio: 1 / 1;
   position: relative;
   border-radius: 0 !important;
@@ -587,26 +681,27 @@ body.pos-delivero-active .product-img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  border-radius: 14px;
+  border-radius: 16px;
+  filter: drop-shadow(0 6px 14px rgba(30, 20, 70, 0.08));
 }
 
 body.pos-delivero-active .product-badge-cat {
   position: absolute;
-  top: 14px;
-  left: 14px;
-  background: rgba(255, 255, 255, 0.92) !important;
+  top: 18px;
+  left: 18px;
+  background: #FFFFFF !important;
   color: var(--delv-primary) !important;
   font-size: 9px !important;
   font-weight: 800 !important;
-  padding: 4px 10px !important;
+  padding: 5px 12px !important;
   border-radius: 999px !important;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
-  backdrop-filter: blur(6px);
+  letter-spacing: 0.08em;
+  box-shadow: 0 2px 8px rgba(30, 20, 70, 0.08);
 }
 
 body.pos-delivero-active .product-info {
-  padding: 12px 14px 14px 14px !important;
+  padding: 14px 16px 16px 16px !important;
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -615,13 +710,13 @@ body.pos-delivero-active .product-info {
 body.pos-delivero-active .product-info::before {
   content: '★★★★★';
   color: #FFB800;
-  font-size: 10px;
-  letter-spacing: 1px;
+  font-size: 11px;
+  letter-spacing: 1.5px;
   line-height: 1;
 }
 
 body.pos-delivero-active .product-title {
-  font-size: 14px !important;
+  font-size: 15px !important;
   font-weight: 700 !important;
   color: var(--delv-text) !important;
   margin: 0 !important;
@@ -631,6 +726,7 @@ body.pos-delivero-active .product-title {
   display: -webkit-box;
   -webkit-line-clamp: 1;
   -webkit-box-orient: vertical;
+  letter-spacing: -0.01em;
 }
 
 body.pos-delivero-active .product-price-row {
@@ -638,19 +734,20 @@ body.pos-delivero-active .product-price-row {
   align-items: center !important;
   justify-content: space-between !important;
   gap: 8px;
-  margin-top: 2px;
+  margin-top: 4px;
 }
 
 body.pos-delivero-active .product-price {
   color: var(--delv-text) !important;
-  font-size: 14px !important;
+  font-size: 15px !important;
   font-weight: 800 !important;
+  letter-spacing: -0.01em;
 }
 
 body.pos-delivero-active .product-add-btn {
-  width: 30px !important;
-  height: 30px !important;
-  border-radius: 10px !important;
+  width: 34px !important;
+  height: 34px !important;
+  border-radius: 12px !important;
   background: var(--delv-primary) !important;
   color: #FFFFFF !important;
   border: none !important;
@@ -670,6 +767,36 @@ body.pos-delivero-active .product-add-btn:disabled {
   background: var(--delv-text-soft) !important;
   cursor: not-allowed;
   box-shadow: none;
+}
+
+/* Banner dots */
+body.pos-delivero-active .pos-delv-banner-dots {
+  position: absolute;
+  bottom: 42px;
+  left: 34px;
+  z-index: 3;
+  display: flex;
+  gap: 6px;
+}
+
+body.pos-delivero-active .pos-delv-banner-dots button {
+  width: 24px;
+  height: 4px;
+  border-radius: 2px;
+  border: none;
+  background: rgba(255, 255, 255, 0.36);
+  cursor: pointer;
+  padding: 0;
+  transition: all 0.3s ease;
+}
+
+body.pos-delivero-active .pos-delv-banner-dots button.active {
+  background: #FFD93B;
+  width: 36px;
+}
+
+body.pos-delivero-active .pos-delv-banner-dots button:hover:not(.active) {
+  background: rgba(255, 255, 255, 0.6);
 }
 
 /* ─── Cart Sidebar (right column) ───────────────────────── */
@@ -2365,6 +2492,18 @@ body.pos-delivero-active .main-content > *:not(.pos-layout) {
    the fixed modal to itself, causing it to render off-viewport. */
 body.pos-delivero-active .pos-layout {
   animation: selasar-fade-in 0.32s ease-out both;
+  transform: none !important;
+  filter: none !important;
+  perspective: none !important;
+}
+
+/* Also guarantee that our centered main-content wrapper never becomes a
+   containing block for fixed descendants (fixes iOS payment modal blur). */
+body.pos-delivero-active .main-content,
+body.pos-delivero-active .app-container {
+  transform: none !important;
+  filter: none !important;
+  perspective: none !important;
 }
 
 body.pos-delivero-active .reports-heading,
@@ -2517,7 +2656,11 @@ body.pos-delivero-active .desktop-nav-group button:active {
 
 /* ─── Sidebar bottom promo — auto-rotating tips ───────── */
 body.pos-delivero-active .desktop-workspace-sidebar::after {
-  animation: selasar-sidebar-promo-slide 12s ease-in-out infinite;
+  animation: none;
+  background:
+    linear-gradient(140deg, rgba(31, 62, 199, 0.55) 0%, transparent 60%),
+    radial-gradient(circle at 75% 30%, #FFB84D 0%, transparent 55%),
+    #1F3EC7 !important;
 }
 
 body.pos-delivero-active .selasar-sidebar-promo {
@@ -2525,44 +2668,78 @@ body.pos-delivero-active .selasar-sidebar-promo {
   bottom: 12px;
   left: 20px;
   right: 20px;
-  height: 96px;
+  height: 132px;
   padding: 14px 16px;
-  border-radius: 16px;
+  border-radius: 18px;
   color: #FFFFFF;
   z-index: 3;
   pointer-events: none;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  gap: 6px;
+  gap: 4px;
   overflow: hidden;
 }
 
+/* Checkerboard footer accent (Plates Meal style) */
+body.pos-delivero-active .selasar-sidebar-promo::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 10px;
+  background:
+    repeating-linear-gradient(90deg,
+      #FFFFFF 0 10px,
+      #1F3EC7 10px 20px);
+  opacity: 0.9;
+}
+
 body.pos-delivero-active .selasar-sidebar-promo span {
-  display: inline-block;
-  padding: 3px 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px 3px 4px;
   border-radius: 999px;
   background: rgba(255, 217, 59, 0.20);
   color: #FFD93B;
   font-size: 9px;
   font-weight: 800;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   width: fit-content;
+  animation: selasar-fade-in 0.4s ease both;
+}
+
+body.pos-delivero-active .selasar-sidebar-promo span::before {
+  content: '';
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #FFD93B;
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.16);
+  display: inline-block;
 }
 
 body.pos-delivero-active .selasar-sidebar-promo strong {
   color: #FFFFFF;
-  font-size: 13px;
-  font-weight: 700;
-  line-height: 1.3;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif;
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+  text-transform: uppercase;
   animation: selasar-fade-in 0.4s ease both;
 }
 
 body.pos-delivero-active .selasar-sidebar-promo small {
-  color: rgba(255, 255, 255, 0.72);
+  color: rgba(255, 255, 255, 0.82);
   font-size: 10px;
+  font-weight: 600;
   line-height: 1.35;
+  padding-bottom: 12px;
+  animation: selasar-fade-in 0.4s ease both;
 }
 
 /* ─── iOS Safari payment modal blur FIX ───────────────── */
