@@ -1249,7 +1249,45 @@ export function App() {
   // brand feel. Business logic and Supabase flow are not touched by this.
   useEffect(() => {
     document.body.classList.add('pos-delivero-active');
-    return () => document.body.classList.remove('pos-delivero-active');
+    // Inject a small rotating tips card at the bottom of the sidebar so the
+    // decorative panel becomes useful for the owner. Content rotates every 4s.
+    const TIPS = [
+      { tag: 'Tips Kasir',  title: 'Gunakan meja saat dine-in.', sub: 'Otomatis tersimpan di riwayat.' },
+      { tag: 'Info Loyalti', title: 'Ajak pelanggan jadi member.', sub: 'Poin bertambah tiap transaksi.' },
+      { tag: 'Insight Toko', title: 'Cek laporan tiap sore.',      sub: 'Deteksi menu terlaris dan slow-moving.' },
+      { tag: 'Kelola Stok',  title: 'Restock sebelum kritis.',    sub: 'Alarm otomatis di menu Stok.' },
+    ];
+    let promoIdx = 0;
+    const mountPromo = () => {
+      const sidebar = document.querySelector('.desktop-workspace-sidebar');
+      if (!sidebar) return null;
+      let card = sidebar.querySelector('.selasar-sidebar-promo');
+      if (!card) {
+        card = document.createElement('div');
+        card.className = 'selasar-sidebar-promo';
+        sidebar.appendChild(card);
+      }
+      const render = () => {
+        const t = TIPS[promoIdx % TIPS.length];
+        card.innerHTML = `<span>${t.tag}</span><strong>${t.title}</strong><small>${t.sub}</small>`;
+      };
+      render();
+      return setInterval(() => { promoIdx += 1; render(); }, 4200);
+    };
+    let interval = mountPromo();
+    // Re-mount if the sidebar is re-created (e.g. after a login state change).
+    const observer = new MutationObserver(() => {
+      if (!document.querySelector('.desktop-workspace-sidebar .selasar-sidebar-promo')) {
+        if (interval) clearInterval(interval);
+        interval = mountPromo();
+      }
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+    return () => {
+      document.body.classList.remove('pos-delivero-active');
+      if (interval) clearInterval(interval);
+      observer.disconnect();
+    };
   }, []);
 
   // ── Apply theme + font to DOM ────────────────────────────────────────────

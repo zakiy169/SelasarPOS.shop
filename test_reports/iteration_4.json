@@ -1,0 +1,33 @@
+{
+  "summary": "Iteration 4 full regression PASSED. All user requests verified: (1) iOS PaymentModal fixed — mobile 390x844 renders SOLID white fullscreen at top=0/left=0/w=390/h=844 with filter:none, backdropFilter:none, opacity:1, and Total Pembayaran + 4 payment methods + QRIS QR + Konfirmasi Lunas button all visible (screenshot confirmed). (2) Font stack correctly reports '-apple-system, BlinkMacSystemFont, \"SF Pro Display\", ...' on both body and headings. (3) Theme/font switchers hidden: .header-theme-toggle display:none, .settings-theme-grid and .settings-font-grid not in DOM (removed). (4) All 9 routes have zero horizontal overflow at 1440x900 (scrollWidth=clientWidth=1440). (5) Entrance animations selasar-fade-up applied to .product-card and .category-pill. (6) Sidebar rotating promo .selasar-sidebar-promo exists on every route with span/strong/small; content rotates every ~4.2s (verified 'Gunakan meja saat dine-in.' -> 'Ajak pelanggan jadi member.' after 5s). (7) Desktop 1440 PaymentModal shows centered card inside fullscreen overlay backdrop — screenshot confirms Total gradient card, 4 method cards, QR code and Konfirmasi Lunas button rendered nicely.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Desktop 1440 content centering", "issues": ["main-content firstChild width is 1186 (viewport 1440 - sidebar 254). max-width:1240 cap does not activate at 1440 viewport, so right whitespace is 0. This matches spec (max-width 1240 with auto margin only produces symmetric whitespace when viewport > 1240+sidebar). At >=1500 viewport, whitespace becomes balanced. Not a defect; note only if user expected padding at 1440."]}
+    ]
+  },
+  "test_results": {
+    "overflow_1440x900_all_routes": "PASS (pos, kds, tables, reports, loyalty, inventory, menu_manager, settings, shift — all scrollWidth==clientWidth==1440)",
+    "sidebar_promo_present_all_routes": true,
+    "promo_rotation_4200ms": {"initial": "Gunakan meja saat dine-in.", "after_5s": "Ajak pelanggan jadi member.", "rotated": true},
+    "fonts": {"body": "-apple-system, BlinkMacSystemFont, SF Pro Display, ...", "heading": "-apple-system, BlinkMacSystemFont, SF Pro Display, ..."},
+    "hidden_switchers": {"header_theme": "display:none", "settings_theme_grid": "not rendered", "settings_font_grid": "not rendered"},
+    "animations": {"product_card": "selasar-fade-up", "category_pill": "selasar-fade-up"},
+    "mobile_payment_390x844": {"overlay_top": 0, "overlay_left": 0, "overlay_size": "390x844", "filter": "none", "backdropFilter": "none", "opacity": 1, "background": "rgb(255,255,255)", "modal_class": "modal-card payment-modal", "has_konfirmasi": true, "has_qris": true, "has_cash_method": true, "innerHTML_len": 5802, "status": "PASS"},
+    "desktop_payment_1440x900": {"overlay": "1440x900 fullscreen backdrop", "modal": "centered card visible with Total gradient, 4 payment method cards, QRIS QR, Konfirmasi Lunas — screenshot confirmed", "status": "PASS"}
+  },
+  "test_report_links": ["/app/test_reports/iter4_mobile_payment.png"],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Content centering at 1440: max-width 1240 auto-margin only balances whitespace when viewport - sidebar > 1240. At 1440 viewport, content fills area next to sidebar (1186px). If user wants explicit lateral padding at 1440, add horizontal padding on .main-content > * or reduce max-width. Otherwise current behaviour is correct per spec.",
+    "Preview harness ('mobile-cart-backdrop') can intercept pointer events during Playwright click; tests should use JS-native click for reliability in the mobile cart -> payment flow."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A (skipped per request)", "frontend": "100% — all iteration 4 acceptance criteria verified"},
+  "seed_data_creation": "None (used /preview-pos.html seed harness with add-to-cart via product card + modal footer checkout, then Bayar via JS-native click on .pos-cart-sidebar .cart-footer .checkout-btn)",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Iter 4 acceptance: PaymentModal iOS fix (isolation:isolate, no transform on ancestor .pos-layout, split animation) verified working — modal getBoundingClientRect().top===0 at 390x844, opacity=1, background solid white, no filter/backdrop-filter blur. SF Pro font, hidden theme/font switchers, centered content, entrance animations, and rotating sidebar promo all pass. If retesting mobile payment: use JS-native click (btn.click()) on '.pos-cart-sidebar .cart-footer .checkout-btn' — Playwright force click can be intercepted by the mobile-cart-backdrop element."
+}
