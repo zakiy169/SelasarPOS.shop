@@ -2361,9 +2361,23 @@ ATURAN:
   const handleGoogleLogin = async () => {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: window.location.origin }
+      options: {
+        redirectTo: window.location.origin,
+        queryParams: { prompt: 'select_account' }
+      }
     });
     if (error) throw error;
+  };
+
+  const handleLogout = async () => {
+    try {
+      const { error } = await supabase.auth.signOut({ scope: 'local' });
+      if (error) throw error;
+    } catch (logoutError) {
+      console.error('Gagal menutup sesi Google:', logoutError.message);
+    } finally {
+      clearAuthenticatedSession();
+    }
   };
 
   if (authLoading) {
@@ -2403,8 +2417,7 @@ ATURAN:
             className="role-btn"
             onClick={() => {
               setAuthError('');
-              clearAuthenticatedSession();
-              void supabase.auth.signOut();
+              void handleLogout();
             }}
           >
             Keluar dan login ulang
@@ -2459,10 +2472,7 @@ ATURAN:
         authenticatedUser={authenticatedUser}
         activeOrganizationId={activeOrganizationId}
         syncStatus={syncStatus}
-        onLogout={() => {
-          clearAuthenticatedSession();
-          void supabase.auth.signOut();
-        }}
+        onLogout={() => { void handleLogout(); }}
         onOpenBluetoothModal={() => setShowBluetoothModal(true)}
       />
 

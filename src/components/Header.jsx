@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { SelasarLogo } from './SelasarLogo';
 import { 
   ShoppingCart, 
@@ -39,6 +40,8 @@ export const Header = ({
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [profileImageFailed, setProfileImageFailed] = useState(false);
+  const [profilePopoverStyle, setProfilePopoverStyle] = useState({});
+  const profileButtonRef = useRef(null);
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
@@ -58,6 +61,73 @@ export const Header = ({
     setMobileNavOpen(false);
     setProfileOpen(false);
   }, [activeTab]);
+
+  useEffect(() => {
+    if (!profileOpen) return undefined;
+
+    const updateProfilePosition = () => {
+      const anchor = profileButtonRef.current?.getBoundingClientRect();
+      if (!anchor) return;
+      const gutter = 10;
+      const width = Math.min(320, window.innerWidth - (gutter * 2));
+      const left = Math.max(gutter, Math.min(anchor.right - width, window.innerWidth - width - gutter));
+      const top = Math.max(gutter, anchor.bottom + 10);
+      setProfilePopoverStyle({
+        width: `${width}px`,
+        left: `${left}px`,
+        top: `${top}px`,
+        maxHeight: `calc(var(--selasar-mobile-viewport-height, 100dvh) - ${top + gutter}px)`
+      });
+    };
+
+    const closeOnEscape = (event) => event.key === 'Escape' && setProfileOpen(false);
+    updateProfilePosition();
+    window.addEventListener('resize', updateProfilePosition);
+    window.addEventListener('scroll', updateProfilePosition, true);
+    window.addEventListener('keydown', closeOnEscape);
+    return () => {
+      window.removeEventListener('resize', updateProfilePosition);
+      window.removeEventListener('scroll', updateProfilePosition, true);
+      window.removeEventListener('keydown', closeOnEscape);
+    };
+  }, [profileOpen]);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    const visualViewport = window.visualViewport;
+
+    const syncMobileViewport = () => {
+      const viewportHeight = visualViewport?.height || window.innerHeight;
+      const viewportTop = visualViewport?.offsetTop || 0;
+
+      root.style.setProperty('--selasar-mobile-viewport-height', `${Math.round(viewportHeight)}px`);
+      root.style.setProperty('--selasar-mobile-viewport-top', `${Math.round(viewportTop)}px`);
+    };
+
+    document.body.classList.toggle('mobile-workspace-open', mobileNavOpen);
+
+    if (!mobileNavOpen) {
+      root.style.removeProperty('--selasar-mobile-viewport-height');
+      root.style.removeProperty('--selasar-mobile-viewport-top');
+      return undefined;
+    }
+
+    syncMobileViewport();
+    visualViewport?.addEventListener('resize', syncMobileViewport);
+    visualViewport?.addEventListener('scroll', syncMobileViewport);
+    window.addEventListener('resize', syncMobileViewport);
+    window.addEventListener('orientationchange', syncMobileViewport);
+
+    return () => {
+      document.body.classList.remove('mobile-workspace-open');
+      root.style.removeProperty('--selasar-mobile-viewport-height');
+      root.style.removeProperty('--selasar-mobile-viewport-top');
+      visualViewport?.removeEventListener('resize', syncMobileViewport);
+      visualViewport?.removeEventListener('scroll', syncMobileViewport);
+      window.removeEventListener('resize', syncMobileViewport);
+      window.removeEventListener('orientationchange', syncMobileViewport);
+    };
+  }, [mobileNavOpen]);
 
   const handleTabClick = (tabId) => {
     sounds.playBeep();
@@ -181,15 +251,17 @@ export const Header = ({
 
         {/* Logged in User Badge */}
         <div className="user-profile-wrap">
-          <button type="button" className="user-role-badge" onClick={() => setProfileOpen(open => !open)} title="Buka profil akun">
+          <button ref={profileButtonRef} type="button" className="user-role-badge" onClick={() => setProfileOpen(open => !open)} title="Buka profil akun" aria-expanded={profileOpen}>
             {authenticatedUser?.avatarUrl && !profileImageFailed
               ? <img src={authenticatedUser.avatarUrl} alt="Profil pengguna" onError={() => setProfileImageFailed(true)} />
               : <User size={15} />}
             <span className="profile-name">{authenticatedUser?.name || (isOwner ? 'Owner' : 'Kasir')}</span>
             <small>{isOwner ? 'Owner' : 'Kasir'}</small>
           </button>
-          {profileOpen && (
-            <div className="user-profile-popover">
+          {profileOpen && createPortal(
+            <div className="user-profile-layer">
+              <button type="button" className="user-profile-dismiss" onClick={() => setProfileOpen(false)} aria-label="Tutup profil akun" />
+              <div className="user-profile-popover user-profile-popover-portal" style={profilePopoverStyle} role="dialog" aria-label="Profil akun">
               <div className="user-profile-heading">
                 {authenticatedUser?.avatarUrl && !profileImageFailed
                   ? <img src={authenticatedUser.avatarUrl} alt="Profil pengguna" onError={() => setProfileImageFailed(true)} />
@@ -200,8 +272,9 @@ export const Header = ({
               <div className="user-profile-meta"><span>ID akun</span><b title={authenticatedUser?.id}>{authenticatedUser?.id ? `${authenticatedUser.id.slice(0, 8)}…` : '-'}</b></div>
               <div className="user-profile-meta"><span>ID toko</span><b title={activeOrganizationId}>{activeOrganizationId ? `${activeOrganizationId.slice(0, 8)}…` : '-'}</b></div>
               <button type="button" className="user-logout-btn" onClick={onLogout}><LogOut size={15} /> Keluar dari akun</button>
+              </div>
             </div>
-          )}
+          , document.body)}
         </div>
 
         {/* Theme Cycle Button */}
