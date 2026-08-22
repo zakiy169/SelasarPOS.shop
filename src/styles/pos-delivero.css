@@ -3500,6 +3500,30 @@ body.pos-delivero-active .loyalty-heading .pos-search-input input::placeholder {
 /* Keep the navigation identity intact when a desktop window is split. The
    compact drawer is also used between 761px and 1080px, not only on phones. */
 @media (min-width:761px) and (max-width:1080px) {
+  body.pos-delivero-active .mobile-bottom-nav {
+    border-color:rgba(68,48,105,.1) !important;
+    background:rgba(250,249,252,.84) !important;
+    box-shadow:0 14px 36px rgba(39,25,67,.15) !important;
+    backdrop-filter:blur(18px) saturate(140%) !important;
+    -webkit-backdrop-filter:blur(18px) saturate(140%) !important;
+  }
+
+  body.pos-delivero-active .mobile-bottom-nav::before {
+    content:none !important;
+    display:none !important;
+  }
+
+  body.pos-delivero-active .mobile-bottom-nav button {
+    color:#756c83 !important;
+    background:transparent !important;
+  }
+
+  body.pos-delivero-active .mobile-bottom-nav button.active {
+    color:#27173f !important;
+    background:#ffd93b !important;
+    box-shadow:0 7px 16px rgba(194,151,0,.2) !important;
+  }
+
   body.pos-delivero-active .mobile-workspace-overlay {
     background:rgba(25,20,35,.34) !important;
     backdrop-filter:blur(8px) saturate(115%) !important;
