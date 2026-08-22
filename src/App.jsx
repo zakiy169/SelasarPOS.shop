@@ -2142,12 +2142,13 @@ export function App() {
     const pertanyaan = pertanyaanAsisten.trim();
     if (!pertanyaan || asistenLoading) return;
 
-    // Login Puter harus dipicu langsung dari tap/click pengguna. Jika dibiarkan
-    // otomatis saat ai.chat(), Safari/iOS dapat memblokir popup autentikasinya.
+    // Konteks PWA dan localhost dianggap sesi baru oleh Puter. Buat temporary
+    // user agar alurnya sama seperti web publik: chat langsung tanpa meminta
+    // akun Google/Microsoft Puter pada setiap perangkat baru.
     if (!puter.auth.isSignedIn()) {
       setAsistenLoading(true);
       try {
-        await puter.auth.signIn();
+        await puter.auth.signIn({ attempt_temp_user_creation: true });
       } catch (error) {
         const errorMessage = error?.message || error?.msg || 'Login Puter dibatalkan atau popup diblokir browser.';
         setJawabanAsisten(`Login Puter gagal: ${errorMessage}`);
