@@ -17,7 +17,8 @@ export const ReceiptModal = ({ transaction, appSettings = {}, onClose }) => {
     if (!bluetoothPrinter.isConnected) return setShowBtModal(true);
     try {
       setPrintingStatus('Mencetak ke printer Bluetooth...');
-      await bluetoothPrinter.printTransaction(transaction, appSettings);
+      const receiptElement = document.getElementById('printable-receipt');
+      await bluetoothPrinter.printReceiptPreview(receiptElement, appSettings);
       sounds.playSuccessChime();
       setPrintingStatus('');
     } catch (error) {

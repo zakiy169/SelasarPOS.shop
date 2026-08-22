@@ -332,7 +332,6 @@ export const Header = ({
           <section className="nav-group nav-utility-group">
             <p className="nav-group-label">Akun & perangkat</p>
             <div className="nav-group-items">
-              <button type="button" className="mobile-only-nav-action" onClick={() => { toggleTheme(); setMobileNavOpen(false); }}><span className="nav-icon"><Palette size={16} /></span><span>Ganti tema</span></button>
               <button type="button" className="mobile-only-nav-action" onClick={() => { onOpenBluetoothModal?.(); setMobileNavOpen(false); }}><span className="nav-icon"><Bluetooth size={16} /></span><span>Printer Bluetooth</span></button>
               <button type="button" className="mobile-only-nav-action mobile-logout-nav" onClick={onLogout}><span className="nav-icon"><LogOut size={16} /></span><span>Keluar akun</span></button>
             </div>

@@ -25,6 +25,7 @@ import {
 } from './data/initialData';
 import './styles/selasar-ui.css';
 import './styles/pos-delivero.css';
+import './styles/login-cinematic.css';
 
 const activeShift = {
   id: 'shift-preview',

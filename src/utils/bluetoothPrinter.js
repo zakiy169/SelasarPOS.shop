@@ -1,5 +1,6 @@
 // Web Bluetooth API Integration for ESC/POS Thermal Printers (58mm & 80mm)
 import { getReceiptLines } from './receipt';
+import { canvasToEscPosRaster, receiptElementToCanvas } from './receiptRaster';
 
 class BluetoothPrinterManager {
   constructor() {
@@ -266,12 +267,20 @@ class BluetoothPrinterManager {
     return receiptOutput;
   }
 
-  async printTransaction(transaction, appSettings = {}) {
+  async printReceiptPreview(receiptElement, appSettings = {}) {
     if (!this.isConnected) {
       throw new Error('Printer Bluetooth belum terhubung.');
     }
-    const escData = this.formatESCPOSTransaction(transaction, appSettings);
+    const dots = appSettings.printerWidth === '80mm' ? 576 : 384;
+    const canvas = await receiptElementToCanvas(receiptElement, dots);
+    const escData = canvasToEscPosRaster(canvas);
     await this.sendRawData(escData);
+  }
+
+  // Kept as a compatibility fallback for callers outside the receipt modal.
+  async printTransaction(transaction, appSettings = {}) {
+    if (!this.isConnected) throw new Error('Printer Bluetooth belum terhubung.');
+    await this.sendRawData(this.formatESCPOSTransaction(transaction, appSettings));
   }
 
   async printTestReceipt() {

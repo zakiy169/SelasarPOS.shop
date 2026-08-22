@@ -2790,6 +2790,17 @@ body.pos-delivero-active .category-pill:nth-child(6) { animation-delay: 210ms; }
 body.pos-delivero-active .category-pill:nth-child(n+7) { animation-delay: 240ms; }
 
 /* ─── Delightful hover / tap feedback ───────────────────── */
+/* A shared, light feedback layer keeps ordinary controls from feeling abrupt. */
+body.pos-delivero-active button,
+body.pos-delivero-active a[role="button"] {
+  transition: filter .16s ease, opacity .16s ease !important;
+}
+
+body.pos-delivero-active button:active:not(:disabled),
+body.pos-delivero-active a[role="button"]:active {
+  filter: brightness(.94);
+}
+
 body.pos-delivero-active .product-card {
   transition: transform 0.24s cubic-bezier(0.2, 0.8, 0.2, 1),
               box-shadow 0.24s cubic-bezier(0.2, 0.8, 0.2, 1),
@@ -3484,6 +3495,114 @@ body.pos-delivero-active .loyalty-heading .pos-search-input input::placeholder {
     z-index:1;
     pointer-events:auto !important;
   }
+}
+
+/* Member management actions are available on wide tables as well as cards. */
+body.pos-delivero-active .member-action { display: flex; align-items: center; gap: 7px; }
+body.pos-delivero-active .member-delete-action,
+body.pos-delivero-active .member-delete-button,
+body.pos-delivero-active .member-delete-confirm {
+  color: #c74343 !important;
+  border-color: rgba(199,67,67,.22) !important;
+  background: #fff1f1 !important;
+}
+body.pos-delivero-active .member-mobile-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+body.pos-delivero-active .member-delete-button { min-height: 42px; border: 1px solid; border-radius: 11px; font: inherit; font-size: 11px; font-weight: 800; }
+body.pos-delivero-active .member-delete-modal { width: min(420px, calc(100% - 28px)); }
+body.pos-delivero-active .member-delete-modal .modal-body p { margin: 0; color: var(--delv-text-muted); line-height: 1.65; }
+body.pos-delivero-active .member-delete-modal .modal-body strong { color: var(--delv-text); }
+body.pos-delivero-active .member-delete-confirm { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 40px; padding: 0 14px; border: 1px solid; border-radius: 12px; font: inherit; font-size: 12px; font-weight: 800; }
+
+/* ─── Mobile: loyalty cards & receipt editor ──────────────────────── */
+@media (max-width: 760px) {
+  body.pos-delivero-active .loyalty-page {
+    gap: 14px !important;
+    padding-inline: 13px !important;
+  }
+
+  body.pos-delivero-active .loyalty-heading .loyalty-actions {
+    width: 100%;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: stretch;
+  }
+
+  body.pos-delivero-active .loyalty-heading .pos-search-input {
+    min-width: 0;
+    width: 100%;
+  }
+
+  body.pos-delivero-active .loyalty-heading .checkout-btn {
+    min-width: 112px;
+    padding-inline: 12px !important;
+  }
+
+  body.pos-delivero-active .member-mobile-list {
+    display: grid;
+    gap: 11px;
+    width: 100%;
+  }
+
+  body.pos-delivero-active .member-mobile-card {
+    display: block !important;
+    width: 100%;
+    min-width: 0;
+    padding: 15px !important;
+    overflow: hidden;
+  }
+
+  body.pos-delivero-active .member-mobile-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  body.pos-delivero-active .member-mobile-top > div { min-width: 0; }
+  body.pos-delivero-active .member-mobile-top strong,
+  body.pos-delivero-active .member-mobile-top > div > span {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  body.pos-delivero-active .member-mobile-top strong { font-size: 15px; }
+  body.pos-delivero-active .member-mobile-top > div > span { margin-top: 3px; font-size: 12px; color: var(--delv-text-muted); }
+  body.pos-delivero-active .member-tier { flex: 0 0 auto; max-width: 118px; }
+
+  body.pos-delivero-active .member-mobile-stats {
+    display: grid;
+    gap: 8px;
+    margin: 14px 0;
+    padding: 12px 0;
+    border-block: 1px solid var(--delv-border);
+  }
+
+  body.pos-delivero-active .member-mobile-stats div { display: flex; justify-content: space-between; gap: 12px; }
+  body.pos-delivero-active .member-mobile-stats span { color: var(--delv-text-muted); font-size: 11px; }
+body.pos-delivero-active .member-mobile-stats b { min-width: 0; color: var(--delv-text); font-size: 12px; text-align: right; overflow-wrap: anywhere; }
+body.pos-delivero-active .member-edit-button { width: 100%; min-height: 42px; justify-content: center; }
+body.pos-delivero-active .member-action { display: flex; align-items: center; gap: 7px; }
+body.pos-delivero-active .member-delete-action,
+body.pos-delivero-active .member-delete-button,
+body.pos-delivero-active .member-delete-confirm { color: #c74343 !important; border-color: rgba(199,67,67,.22) !important; background: #fff1f1 !important; }
+body.pos-delivero-active .member-mobile-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+body.pos-delivero-active .member-delete-button { min-height: 42px; border: 1px solid; border-radius: 11px; font: inherit; font-size: 11px; font-weight: 800; }
+body.pos-delivero-active .member-delete-modal { width: min(420px, calc(100% - 28px)); }
+body.pos-delivero-active .member-delete-modal .modal-body p { margin: 0; color: var(--delv-text-muted); line-height: 1.65; }
+body.pos-delivero-active .member-delete-modal .modal-body strong { color: var(--delv-text); }
+body.pos-delivero-active .member-delete-confirm { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 40px; padding: 0 14px; border: 1px solid; border-radius: 12px; font: inherit; font-size: 12px; font-weight: 800; }
+
+  body.pos-delivero-active .receipt-settings-page { padding-inline: 13px !important; }
+  body.pos-delivero-active .receipt-settings-heading { display: flex !important; align-items: flex-start !important; flex-direction: column !important; gap: 13px; }
+  body.pos-delivero-active .receipt-settings-heading .receipt-reset { width: 100%; justify-content: center; }
+  body.pos-delivero-active .receipt-editor-layout { grid-template-columns: minmax(0, 1fr) !important; gap: 13px !important; }
+  body.pos-delivero-active .receipt-editor-panel,
+  body.pos-delivero-active .receipt-editor-preview { min-width: 0; padding: 15px !important; overflow: hidden; }
+  body.pos-delivero-active .receipt-editor-panel input,
+  body.pos-delivero-active .receipt-editor-panel textarea { min-width: 0; max-width: 100%; }
+  body.pos-delivero-active .receipt-toggles { grid-template-columns: minmax(0, 1fr) !important; }
+  body.pos-delivero-active .receipt-editor-preview .thermal-receipt { width: 100% !important; min-width: 0 !important; max-width: 100% !important; padding: 16px 12px !important; }
 }
 
 @media (max-width:370px) {

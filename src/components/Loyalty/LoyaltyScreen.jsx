@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
-import { Award, Edit3, Plus, Search, X } from 'lucide-react';
+import { Award, Edit3, Plus, Search, Trash2, X } from 'lucide-react';
 import { formatRupiah } from '../../utils/formatters';
 import { sounds } from '../../utils/audio';
 
 const EMPTY_MEMBER = { name: '', phone: '', level: 'Bronze', points: '', totalSpent: '', joinedDate: new Date().toISOString().slice(0, 10) };
 const LEVELS = ['Bronze', 'Silver', 'Gold VIP', 'Platinum'];
 
-export const LoyaltyScreen = ({ members = [], onAddMember, onUpdateMember }) => {
+export const LoyaltyScreen = ({ members = [], onAddMember, onUpdateMember, onDeleteMember }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [editingMember, setEditingMember] = useState(null);
+  const [memberToDelete, setMemberToDelete] = useState(null);
   const [form, setForm] = useState(EMPTY_MEMBER);
 
   // Tahan terhadap data member lama/null agar satu record rusak tidak membuat
@@ -79,6 +80,13 @@ export const LoyaltyScreen = ({ members = [], onAddMember, onUpdateMember }) => 
     setEditingMember(null);
   };
 
+  const confirmDelete = () => {
+    if (!memberToDelete?.id) return;
+    sounds.playSuccessChime();
+    onDeleteMember?.(memberToDelete.id);
+    setMemberToDelete(null);
+  };
+
   const Tier = ({ member }) => {
     const level = String(member?.level ?? 'Bronze');
     const premium = level.includes('VIP') || level === 'Platinum';
@@ -147,9 +155,18 @@ export const LoyaltyScreen = ({ members = [], onAddMember, onUpdateMember }) => 
                     <button
                       className="icon-action"
                       title="Edit member"
+                      aria-label={`Edit ${String(member?.name ?? 'member')}`}
                       onClick={() => openEdit(member)}
                     >
                       <Edit3 size={16} />
+                    </button>
+                    <button
+                      className="icon-action member-delete-action"
+                      title="Hapus member"
+                      aria-label={`Hapus ${String(member?.name ?? 'member')}`}
+                      onClick={() => setMemberToDelete(member)}
+                    >
+                      <Trash2 size={16} />
                     </button>
                   </td>
                 </tr>
@@ -193,13 +210,22 @@ export const LoyaltyScreen = ({ members = [], onAddMember, onUpdateMember }) => 
               </div>
             </div>
 
-            <button
-              type="button"
-              className="member-edit-button"
-              onClick={() => openEdit(member)}
-            >
-              <Edit3 size={15} /> Edit member
-            </button>
+            <div className="member-mobile-actions">
+              <button
+                type="button"
+                className="member-edit-button"
+                onClick={() => openEdit(member)}
+              >
+                <Edit3 size={15} /> Edit
+              </button>
+              <button
+                type="button"
+                className="member-delete-button"
+                onClick={() => setMemberToDelete(member)}
+              >
+                <Trash2 size={15} /> Hapus
+              </button>
+            </div>
           </article>
         ))}
 
@@ -323,6 +349,35 @@ export const LoyaltyScreen = ({ members = [], onAddMember, onUpdateMember }) => 
               </button>
             </div>
           </form>
+        </div>
+      )}
+
+      {memberToDelete && (
+        <div className="modal-overlay" onClick={() => setMemberToDelete(null)}>
+          <section
+            className="modal-card member-delete-modal"
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="delete-member-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="modal-header">
+              <h3 id="delete-member-title">Hapus member?</h3>
+              <button type="button" className="modal-close" aria-label="Tutup" onClick={() => setMemberToDelete(null)}>
+                <X size={18} />
+              </button>
+            </div>
+            <div className="modal-body">
+              <p>
+                Member <strong>{String(memberToDelete.name ?? 'ini')}</strong> akan dihapus dari daftar loyalty.
+                Riwayat transaksi yang sudah ada tidak ikut dihapus.
+              </p>
+            </div>
+            <div className="modal-footer">
+              <button type="button" className="receipt-action" onClick={() => setMemberToDelete(null)}>Batal</button>
+              <button type="button" className="member-delete-confirm" onClick={confirmDelete}><Trash2 size={15} /> Hapus member</button>
+            </div>
+          </section>
         </div>
       )}
     </div>

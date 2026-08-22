@@ -192,6 +192,7 @@ export function App() {
   const [asistenMinimized, setAsistenMinimized] = useState(() => localStorage.getItem('selasar_ai_minimized') === 'true');
   const [riwayatAsisten, setRiwayatAsisten] = useState([]);
   const asistenChatEndRef = useRef(null);
+  const asistenInputRef = useRef(null);
 
   useEffect(() => {
     // Scroll hanya di area riwayat chat. Jangan gunakan scrollIntoView()
@@ -644,6 +645,179 @@ export function App() {
           .ai-message-bubble {
             max-width: 88%;
           }
+        }
+
+        /* Modern conversation surface: ChatGPT-like clarity, Selasar energy. */
+        .ai-assistant-widget {
+          width: min(438px, calc(100vw - 28px)) !important;
+          height: min(650px, calc(100dvh - 104px)) !important;
+          max-height: min(650px, calc(100dvh - 104px)) !important;
+          border: 1px solid rgba(215, 198, 255, .22) !important;
+          border-radius: 24px !important;
+          background: #15122a !important;
+          box-shadow: 0 26px 80px rgba(5, 3, 18, .52), 0 0 0 1px rgba(255,255,255,.025) inset !important;
+        }
+
+        .ai-assistant-header {
+          padding: 14px 16px !important;
+          border-bottom-color: rgba(255,255,255,.08) !important;
+          background: linear-gradient(112deg, rgba(119, 79, 255, .28), rgba(28, 24, 57, .92) 54%, rgba(255, 205, 41, .09)) !important;
+        }
+
+        .ai-assistant-mark {
+          position: relative;
+          width: 38px !important;
+          height: 38px !important;
+          border-radius: 13px !important;
+          background: linear-gradient(145deg, #ffdc48, #ffb21c) !important;
+          color: #241442 !important;
+          box-shadow: 0 8px 22px rgba(255, 194, 36, .2) !important;
+          font-family: Georgia, serif;
+          font-size: 20px !important;
+          font-weight: 900;
+          font-style: italic;
+        }
+
+        .ai-assistant-heading strong {
+          color: #fff !important;
+          font-size: 14px !important;
+          letter-spacing: -.2px;
+        }
+
+        .ai-assistant-heading span { color: #bbb3d2 !important; font-size: 10px !important; }
+
+        .ai-assistant-minimize {
+          width: 32px !important;
+          height: 32px !important;
+          border: 1px solid rgba(255,255,255,.11) !important;
+          border-radius: 11px !important;
+          background: rgba(255,255,255,.07) !important;
+          color: #fff !important;
+          box-shadow: none !important;
+        }
+
+        .ai-assistant-history {
+          gap: 14px !important;
+          padding: 18px 16px 14px !important;
+          background: radial-gradient(circle at 83% 4%, rgba(101,67,213,.12), transparent 26%), #15122a !important;
+        }
+
+        .ai-assistant-empty {
+          min-height: 0 !important;
+          margin: auto 0 !important;
+          align-items: flex-start !important;
+          text-align: left !important;
+          padding: 8px 5px 12px !important;
+          gap: 8px !important;
+        }
+
+        .ai-assistant-empty-mark {
+          width: 46px !important;
+          height: 46px !important;
+          border: 1px solid rgba(255,220,72,.24) !important;
+          border-radius: 15px !important;
+          background: rgba(255,207,51,.1) !important;
+          color: #ffdc48 !important;
+        }
+
+        .ai-assistant-empty strong { color: #fff !important; font-size: 19px !important; letter-spacing: -.45px; }
+        .ai-assistant-empty span { max-width: 340px !important; color: #b8b0cb !important; font-size: 12px !important; line-height: 1.6 !important; }
+
+        .ai-assistant-suggestions {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 8px;
+          width: 100%;
+          margin-top: 10px;
+        }
+
+        .ai-assistant-suggestion {
+          min-height: 62px;
+          padding: 10px 11px;
+          border: 1px solid rgba(255,255,255,.1);
+          border-radius: 14px;
+          background: rgba(255,255,255,.045);
+          color: #eae5fa;
+          text-align: left;
+          font: inherit;
+          font-size: 11px;
+          line-height: 1.35;
+          cursor: pointer;
+          transition: transform .16s ease, border-color .16s ease, background .16s ease;
+        }
+
+        .ai-assistant-suggestion:hover {
+          transform: translateY(-1px);
+          border-color: rgba(255,220,72,.52);
+          background: rgba(255,220,72,.09);
+        }
+
+        .ai-assistant-suggestion b { display: block; margin-bottom: 3px; color: #ffdc48; font-size: 10px; letter-spacing: .02em; }
+
+        .ai-message-row { gap: 8px !important; }
+        .ai-message-avatar {
+          width: 27px !important;
+          height: 27px !important;
+          border-radius: 10px !important;
+          background: rgba(255,211,56,.12) !important;
+          color: #ffdb45 !important;
+          font-size: 12px !important;
+        }
+        .ai-message-bubble { max-width: 86% !important; padding: 10px 12px !important; border-radius: 16px !important; font-size: 12px !important; }
+        .ai-message-bubble.user { background: linear-gradient(135deg, #7556ef, #9a56d7) !important; border-bottom-right-radius: 5px !important; box-shadow: 0 7px 18px rgba(93,65,210,.23); }
+        .ai-message-bubble.assistant { border: 1px solid rgba(255,255,255,.09) !important; background: rgba(255,255,255,.065) !important; color: #f7f5ff !important; border-bottom-left-radius: 5px !important; }
+
+        .ai-assistant-composer { padding: 12px 14px calc(13px + env(safe-area-inset-bottom)) !important; border-top-color: rgba(255,255,255,.08) !important; background: #17142d !important; }
+        .ai-assistant-input-wrap { gap: 7px !important; padding: 6px 6px 6px 12px !important; border: 1px solid rgba(255,255,255,.12) !important; border-radius: 17px !important; background: rgba(255,255,255,.065) !important; transition: border-color .18s ease, box-shadow .18s ease; }
+        .ai-assistant-input-wrap:focus-within { border-color: rgba(255,219,70,.67) !important; box-shadow: 0 0 0 3px rgba(255,212,56,.08); }
+        .ai-assistant-input-wrap textarea { min-height: 40px !important; color: #fff !important; font-size: 12px !important; }
+        .ai-assistant-input-wrap textarea::placeholder { color: #9991ae !important; }
+        .ai-assistant-send { width: 40px !important; height: 40px !important; border-radius: 13px !important; background: linear-gradient(145deg, #ffdc48, #ffb91f) !important; color: #281544 !important; box-shadow: none !important; font-size: 17px !important; }
+        .ai-assistant-hint { margin-top: 8px !important; color: #918aa7 !important; font-size: 9px !important; }
+
+        .ai-assistant-minimized { width: 55px !important; height: 55px !important; border: 1px solid rgba(255,220,72,.42) !important; background: linear-gradient(145deg, #262048, #17142d) !important; box-shadow: 0 14px 30px rgba(11,7,29,.4) !important; }
+        .ai-assistant-minimized-icon { color: #ffdc48 !important; }
+        .ai-assistant-minimized-dot { background: #68e6a7 !important; border-color: #24203f !important; }
+
+        @media (max-width: 480px) {
+          .ai-assistant-header { padding: 11px 12px !important; }
+          .ai-assistant-history { padding: 13px 12px 10px !important; }
+          .ai-assistant-empty strong { font-size: 17px !important; }
+          .ai-assistant-suggestions { gap: 7px; }
+          .ai-assistant-suggestion { min-height: 57px; padding: 8px 9px; font-size: 10px; }
+          .ai-assistant-composer { padding: 9px 10px calc(10px + env(safe-area-inset-bottom)) !important; }
+        }
+
+        @keyframes selasarAiPopupIn {
+          from { opacity: 0; transform: translateY(18px) scale(.965); filter: blur(3px); }
+          to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+        }
+
+        @keyframes selasarAiButtonIn {
+          from { opacity: 0; transform: scale(.72) rotate(-8deg); }
+          to { opacity: 1; transform: scale(1) rotate(0); }
+        }
+
+        .ai-assistant-widget {
+          transform-origin: right bottom;
+          animation: selasarAiPopupIn .34s cubic-bezier(.2,.9,.25,1) both !important;
+        }
+
+        .ai-assistant-minimized {
+          transform-origin: right bottom;
+          animation: selasarAiButtonIn .26s cubic-bezier(.2,.9,.25,1) both !important;
+          transition: transform .18s cubic-bezier(.2,.9,.25,1), box-shadow .18s ease, border-color .18s ease !important;
+        }
+
+        .ai-assistant-minimized:hover { transform: translateY(-3px) scale(1.04); }
+        .ai-assistant-minimized:active { transform: scale(.92); }
+        .ai-assistant-send { transition: transform .16s cubic-bezier(.2,.9,.25,1), filter .16s ease !important; }
+        .ai-assistant-send:not(:disabled):hover { transform: translateY(-2px) scale(1.04); filter: brightness(1.04); }
+        .ai-assistant-send:not(:disabled):active { transform: scale(.91); }
+
+        @media (prefers-reduced-motion: reduce) {
+          .ai-assistant-widget, .ai-assistant-minimized { animation: none !important; }
+          .ai-assistant-minimized, .ai-assistant-send { transition: none !important; }
         }
       `;
       document.head.appendChild(style);
@@ -2251,6 +2425,7 @@ ATURAN:
 
   const handleAddMember = (member) => setMembers(prev => [...prev, member]);
   const handleUpdateMember = (updatedMember) => setMembers(prev => prev.map(member => member.id === updatedMember.id ? updatedMember : member));
+  const handleDeleteMember = (memberId) => setMembers(prev => prev.filter(member => member.id !== memberId));
 
   const handleStartTableOrder = (table) => {
     setTableForNewOrder(table.name);
@@ -2570,7 +2745,7 @@ ATURAN:
         )}
 
         {activeTab === 'loyalty' && (
-          <LoyaltyScreen members={members} onAddMember={handleAddMember} onUpdateMember={handleUpdateMember} />
+          <LoyaltyScreen members={members} onAddMember={handleAddMember} onUpdateMember={handleUpdateMember} onDeleteMember={handleDeleteMember} />
         )}
 
         {activeTab === 'receipt_settings' && currentUserRole === 'owner' && (
@@ -2611,7 +2786,7 @@ ATURAN:
         >
           <header className="ai-assistant-header">
             <div className="ai-assistant-brand">
-              <div className="ai-assistant-mark">✦</div>
+              <div className="ai-assistant-mark">S</div>
               <div className="ai-assistant-heading">
                 <strong>Asisten Kasir AI</strong>
                 <span>Operator POS · terhubung ke data toko</span>
@@ -2636,11 +2811,32 @@ ATURAN:
             {riwayatAsisten.length === 0 && (
               <div className="ai-assistant-empty">
                 <div className="ai-assistant-empty-mark">✦</div>
-                <strong>Siap membantu operasional kedai.</strong>
+                <strong>Ada yang bisa kubantu, bos?</strong>
                 <span>
-                  Tanya stok, penjualan, shift, menu, member, atau minta saya
-                  menjalankan aksi di POS.
+                  Tanya apa saja soal operasional kedai, atau beri aku perintah
+                  langsung untuk dikerjakan di POS.
                 </span>
+                <div className="ai-assistant-suggestions" aria-label="Contoh perintah">
+                  {[
+                    ['↗ Penjualan', 'Ringkas penjualan hari ini'],
+                    ['◌ Stok', 'Cek stok bahan yang menipis'],
+                    ['☀ Shift', 'Lihat status shift saat ini'],
+                    ['✦ Cepat', 'Tampilkan menu terlaris'],
+                  ].map(([label, prompt]) => (
+                    <button
+                      key={label}
+                      type="button"
+                      className="ai-assistant-suggestion"
+                      onClick={() => {
+                        setPertanyaanAsisten(prompt);
+                        requestAnimationFrame(() => asistenInputRef.current?.focus());
+                      }}
+                    >
+                      <b>{label}</b>
+                      {prompt}
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
 
@@ -2691,6 +2887,7 @@ ATURAN:
             <form onSubmit={tanyaAsistenKasir}>
               <div className="ai-assistant-input-wrap">
                 <textarea
+                  ref={asistenInputRef}
                   value={pertanyaanAsisten}
                   onChange={(event) =>
                     setPertanyaanAsisten(event.target.value)

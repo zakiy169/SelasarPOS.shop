@@ -58,6 +58,7 @@ export const LoginScreen = ({ onGoogleLogin }) => {
             <div className="login-float-object login-float-receipt"><ReceiptText /></div>
             <div className="login-float-object login-float-bag"><ShoppingBag /></div>
             <div className="login-float-object login-float-order"><span>45</span><small>ORDER</small></div>
+            <img className="login-skater-illustration" src="/selasar-skateboard-courier.png" alt="Kurir Selasar naik skateboard membawa pesanan" />
 
             <div className="login-mini-bar" aria-hidden="true">
               <span><Coffee size={14} /> Selasar Workspace</span>
