@@ -308,7 +308,6 @@ export const Header = ({
           })}
         </section>)}
       </div>
-      <div className="desktop-sidebar-footer"><button type="button" onClick={onOpenBluetoothModal} title="Printer Bluetooth"><Bluetooth size={18} /></button><button type="button" onClick={toggleTheme} title="Ganti tema"><Palette size={18} /></button></div>
     </aside>
 
     {mobileNavOpen && <div className="mobile-workspace-overlay" onMouseDown={event => event.target === event.currentTarget && setMobileNavOpen(false)}>
@@ -332,7 +331,6 @@ export const Header = ({
           <section className="nav-group nav-utility-group">
             <p className="nav-group-label">Akun & perangkat</p>
             <div className="nav-group-items">
-              <button type="button" className="mobile-only-nav-action" onClick={() => { onOpenBluetoothModal?.(); setMobileNavOpen(false); }}><span className="nav-icon"><Bluetooth size={16} /></span><span>Printer Bluetooth</span></button>
               <button type="button" className="mobile-only-nav-action mobile-logout-nav" onClick={onLogout}><span className="nav-icon"><LogOut size={16} /></span><span>Keluar akun</span></button>
             </div>
           </section>

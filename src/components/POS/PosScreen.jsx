@@ -10,7 +10,6 @@ import {
   Minus, 
   Lock,
   X,
-  Bluetooth,
   Sparkles,
   Coffee,
   Zap,
@@ -25,7 +24,6 @@ import { PaymentModal } from './PaymentModal';
 import { ReceiptModal } from './ReceiptModal';
 import { TransactionSuccessScreen } from './TransactionSuccessScreen';
 import { sounds } from '../../utils/audio';
-import { bluetoothPrinter } from '../../utils/bluetoothPrinter';
 import { ProductImage } from '../ProductImage';
 
 const STOCK_UNIT_META = {
@@ -376,28 +374,6 @@ export const PosScreen = ({
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
-
-            <button
-              onClick={() => { sounds.playBeep(); if (onOpenBluetoothModal) onOpenBluetoothModal(); }}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                padding: '8px 14px',
-                borderRadius: '12px',
-                border: `1px solid ${bluetoothPrinter.isConnected ? 'rgba(52, 199, 89, 0.4)' : 'var(--border-color)'}`,
-                background: bluetoothPrinter.isConnected ? 'rgba(52, 199, 89, 0.1)' : 'var(--bg-card)',
-                color: bluetoothPrinter.isConnected ? 'var(--apple-green)' : 'var(--text-main)',
-                fontSize: '12px',
-                fontWeight: '700',
-                cursor: 'pointer',
-                whiteSpace: 'nowrap'
-              }}
-              title="Atur / Hubungkan Printer Bluetooth Thermal"
-            >
-              <Bluetooth size={16} />
-              <span>{bluetoothPrinter.isConnected ? `Printer` : 'Printer BT'}</span>
-            </button>
           </div>
         </div>
 
