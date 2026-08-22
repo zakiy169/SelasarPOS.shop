@@ -343,17 +343,25 @@ body.pos-delivero-active .pos-workspace-hero aside span {
 /* Reuse the login courier in the otherwise empty cashier welcome area. */
 body.pos-delivero-active .pos-workspace-hero {
   position:relative;
+  padding-left:132px !important;
 }
 
 body.pos-delivero-active .pos-hero-skater {
-  width:126px;
+  width:118px;
   height:auto;
   position:absolute;
-  left:-144px;
-  top:-8px;
+  left:0;
+  top:-18px;
+  z-index:0;
   pointer-events:none;
   filter:drop-shadow(0 13px 16px rgba(6,68,130,.18));
   transform:rotate(-4deg);
+}
+
+body.pos-delivero-active .pos-workspace-hero > div,
+body.pos-delivero-active .pos-workspace-hero > aside {
+  position:relative;
+  z-index:1;
 }
 
 /* Operational pages share a calm blue workspace rather than bare white
@@ -384,6 +392,7 @@ body.pos-delivero-active .apple-table td {
 }
 
 @media (max-width:1080px) {
+  body.pos-delivero-active .pos-workspace-hero { padding-left:0 !important; }
   body.pos-delivero-active .pos-hero-skater { display:none; }
 }
 
