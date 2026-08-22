@@ -347,15 +347,15 @@ body.pos-delivero-active .pos-workspace-hero {
 }
 
 body.pos-delivero-active .pos-hero-skater {
-  width:118px;
+  width:126px;
   height:auto;
   position:absolute;
-  left:0;
-  top:-18px;
+  left:4px;
+  top:8px;
   z-index:0;
   pointer-events:none;
   filter:drop-shadow(0 13px 16px rgba(6,68,130,.18));
-  transform:rotate(-4deg);
+  transform:none;
 }
 
 body.pos-delivero-active .pos-workspace-hero > div,
@@ -389,6 +389,18 @@ body.pos-delivero-active .member-table td,
 body.pos-delivero-active .apple-table td {
   border-top-color:#dde7fa !important;
   background:rgba(255,255,255,.48);
+}
+
+body.pos-delivero-active .member-table-panel {
+  background:#dce9ff !important;
+}
+
+body.pos-delivero-active .member-table tbody td {
+  background:#eaf2ff !important;
+}
+
+body.pos-delivero-active .member-table tbody tr:nth-child(even) td {
+  background:#e2ecff !important;
 }
 
 @media (max-width:1080px) {
