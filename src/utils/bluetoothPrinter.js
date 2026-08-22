@@ -231,10 +231,9 @@ class BluetoothPrinterManager {
       });
       return lines.length ? lines : [''];
     };
-    const centerLine = (text) => wrapToLines(text, width).map(value => {
-      const leftPad = Math.max(0, Math.floor((width - value.length) / 2));
-      return `${' '.repeat(leftPad)}${value}`;
-    }).join('\n') + '\n';
+    // Alignment is handled by ESC a 1. Adding manual spaces would centre the
+    // text twice and shifts it on some portable printer models.
+    const centerLine = (text) => wrapToLines(text, width).join('\n') + '\n';
     const wrapLine = (text, indent = '') => wrapToLines(text, Math.max(1, width - indent.length)).map(line => indent + line).join('\n') + '\n';
     const padReceiptLine = (left, right) => {
       const leftStr = normalizeText(left);
