@@ -3497,6 +3497,63 @@ body.pos-delivero-active .loyalty-heading .pos-search-input input::placeholder {
   }
 }
 
+/* Keep the navigation identity intact when a desktop window is split. The
+   compact drawer is also used between 761px and 1080px, not only on phones. */
+@media (min-width:761px) and (max-width:1080px) {
+  body.pos-delivero-active .mobile-workspace-overlay {
+    background:rgba(25,20,35,.34) !important;
+    backdrop-filter:blur(8px) saturate(115%) !important;
+    -webkit-backdrop-filter:blur(8px) saturate(115%) !important;
+  }
+
+  body.pos-delivero-active .mobile-workspace-sheet {
+    width:min(300px,82vw) !important;
+    padding:18px 13px !important;
+    color:#fff !important;
+    background:linear-gradient(180deg,#211142 0%,#291557 100%) !important;
+    box-shadow:18px 0 48px rgba(27,13,58,.32) !important;
+  }
+
+  body.pos-delivero-active .nav-sheet-heading {
+    border-bottom-color:rgba(255,255,255,.09) !important;
+  }
+
+  body.pos-delivero-active .mobile-drawer-logo {
+    filter:none !important;
+  }
+
+  body.pos-delivero-active .mobile-workspace-sheet .nav-group-items {
+    grid-template-columns:1fr !important;
+    gap:4px !important;
+  }
+
+  body.pos-delivero-active .mobile-workspace-sheet .nav-group-label {
+    color:#8e78b5 !important;
+  }
+
+  body.pos-delivero-active .mobile-workspace-sheet :is(.nav-btn,.mobile-only-nav-action) {
+    min-height:45px !important;
+    color:#c7bddc !important;
+    background:transparent !important;
+  }
+
+  body.pos-delivero-active .mobile-workspace-sheet .nav-icon {
+    color:#aa98cb !important;
+    background:rgba(255,255,255,.055) !important;
+  }
+
+  body.pos-delivero-active .mobile-workspace-sheet .nav-btn.active {
+    color:#25133f !important;
+    background:#ffd93b !important;
+    box-shadow:0 10px 22px rgba(255,217,59,.18) !important;
+  }
+
+  body.pos-delivero-active .mobile-workspace-sheet .nav-btn.active .nav-icon {
+    color:#6336a4 !important;
+    background:rgba(100,54,164,.13) !important;
+  }
+}
+
 /* Member management actions are available on wide tables as well as cards. */
 body.pos-delivero-active .member-action { display: flex; align-items: center; gap: 7px; }
 body.pos-delivero-active .member-delete-action,
