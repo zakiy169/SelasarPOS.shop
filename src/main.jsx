@@ -7,7 +7,7 @@ import './styles/login-cinematic.css'
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js')
+    navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' })
       .then((registration) => registration.update())
       .catch((error) => {
         console.warn('Service worker Selasar tidak dapat didaftarkan.', error);
