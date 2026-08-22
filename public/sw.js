@@ -1,4 +1,4 @@
-const CACHE_NAME = 'selasar-pos-v1';
+const CACHE_NAME = 'selasar-pos-v2';
 const APP_SHELL = [
   '/',
   '/manifest.webmanifest',
