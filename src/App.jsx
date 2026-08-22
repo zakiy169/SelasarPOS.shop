@@ -15,6 +15,7 @@ import { OnboardingScreen } from './components/Auth/OnboardingScreen';
 import { SettingsScreen } from './components/Settings/SettingsScreen';
 import { ReceiptSettings } from './components/Settings/ReceiptSettings';
 import { BluetoothModal } from './components/Settings/BluetoothModal';
+import { InstallAppButton } from './components/InstallAppButton';
 import { supabase } from './lib/supabase';
 import { getJakartaDateKey, getShiftCashSummary, shouldAutoCloseShift } from './utils/shift';
 
@@ -2637,6 +2638,7 @@ ATURAN:
 
   return (
     <div className="app-container">
+      <InstallAppButton />
       <Header
         activeTab={activeTab}
         setActiveTab={setActiveTab}
