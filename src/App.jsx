@@ -1531,7 +1531,26 @@ export function App() {
         }
 
         @media (max-width: 768px) {
+          :root {
+            --selasar-mobile-header-height: calc(68px + env(safe-area-inset-top));
+            --selasar-visual-viewport-height: 100dvh;
+          }
+
+          html { -webkit-text-size-adjust: 100%; }
           body { overflow-x: hidden; }
+
+          /* iOS standalone has a real status-bar inset; without it, the clock
+             overlaps the brand and fixed sheets calculate the wrong top edge. */
+          .selasar-header {
+            min-height: var(--selasar-mobile-header-height) !important;
+            padding-top: max(9px, env(safe-area-inset-top)) !important;
+          }
+          .main-content { min-height: calc(100dvh - var(--selasar-mobile-header-height)) !important; }
+          .app-container { padding-bottom: calc(92px + env(safe-area-inset-bottom)) !important; }
+          .pos-layout { padding-bottom: calc(105px + env(safe-area-inset-bottom)) !important; }
+
+          /* Safari zooms any editable control smaller than 16px. */
+          input, select, textarea { font-size: 16px !important; }
 
           [role="dialog"], [aria-modal="true"], [data-modal="true"],
           .modal, .modal-overlay, .dialog {
@@ -1550,6 +1569,36 @@ export function App() {
             height: min(58dvh, 520px) !important;
             max-height: min(58dvh, 520px) !important;
             min-height: 360px !important;
+          }
+
+          .ai-assistant-input-wrap textarea { font-size: 16px !important; }
+
+          body.mobile-ai-typing .mobile-bottom-nav { display: none !important; }
+          body.mobile-ai-typing .ai-assistant-widget {
+            bottom: 8px !important;
+            height: min(430px, calc(var(--selasar-visual-viewport-height) - 16px)) !important;
+            max-height: calc(var(--selasar-visual-viewport-height) - 16px) !important;
+            min-height: 0 !important;
+          }
+
+          /* Cart is a self-contained viewport sheet: only its item list may scroll. */
+          body.mobile-cart-open .pos-cart-sidebar.open-mobile {
+            inset: var(--selasar-mobile-header-height) 0 0 !important;
+            width: 100% !important;
+            height: auto !important;
+            max-height: none !important;
+            padding: 10px 12px max(12px, env(safe-area-inset-bottom)) !important;
+            overflow: hidden !important;
+          }
+          body.mobile-cart-open .pos-cart-sidebar.open-mobile .cart-items-container {
+            min-height: 0 !important;
+            max-height: none !important;
+            flex: 1 1 auto !important;
+            overflow-y: auto !important;
+          }
+          body.mobile-cart-open .pos-cart-sidebar.open-mobile .cart-footer {
+            flex: 0 0 auto !important;
+            padding-bottom: 10px !important;
           }
 
           .ai-assistant-history {
@@ -1692,6 +1741,42 @@ export function App() {
       style?.remove();
     };
   }, [activeTab, asistenMinimized]);
+
+  // Keep the AI composer inside Safari's visual viewport while its keyboard is
+  // open. This avoids the browser zoom/pan leaving the composer behind nav UI.
+  useEffect(() => {
+    const viewport = window.visualViewport;
+    const syncViewport = () => {
+      const height = viewport?.height || window.innerHeight;
+      document.documentElement.style.setProperty('--selasar-visual-viewport-height', `${Math.round(height)}px`);
+    };
+    const onFocusIn = (event) => {
+      if (event.target instanceof Element && event.target.closest('.ai-assistant-widget textarea')) {
+        document.body.classList.add('mobile-ai-typing');
+        syncViewport();
+      }
+    };
+    const onFocusOut = () => {
+      window.setTimeout(() => {
+        if (!document.activeElement?.closest?.('.ai-assistant-widget textarea')) {
+          document.body.classList.remove('mobile-ai-typing');
+        }
+      }, 120);
+    };
+
+    viewport?.addEventListener('resize', syncViewport);
+    viewport?.addEventListener('scroll', syncViewport);
+    document.addEventListener('focusin', onFocusIn);
+    document.addEventListener('focusout', onFocusOut);
+    return () => {
+      viewport?.removeEventListener('resize', syncViewport);
+      viewport?.removeEventListener('scroll', syncViewport);
+      document.removeEventListener('focusin', onFocusIn);
+      document.removeEventListener('focusout', onFocusOut);
+      document.body.classList.remove('mobile-ai-typing');
+      document.documentElement.style.removeProperty('--selasar-visual-viewport-height');
+    };
+  }, []);
 
   // Keep legacy header instances on the same chunky Selasar brand asset used
   // by the desktop sidebar. Older builds used to force the rectangular logo.
