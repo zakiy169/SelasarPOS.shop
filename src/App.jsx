@@ -2142,6 +2142,26 @@ export function App() {
     const pertanyaan = pertanyaanAsisten.trim();
     if (!pertanyaan || asistenLoading) return;
 
+    // Login Puter harus dipicu langsung dari tap/click pengguna. Jika dibiarkan
+    // otomatis saat ai.chat(), Safari/iOS dapat memblokir popup autentikasinya.
+    if (!puter.auth.isSignedIn()) {
+      setAsistenLoading(true);
+      try {
+        await puter.auth.signIn();
+      } catch (error) {
+        const errorMessage = error?.message || error?.msg || 'Login Puter dibatalkan atau popup diblokir browser.';
+        setJawabanAsisten(`Login Puter gagal: ${errorMessage}`);
+        setRiwayatAsisten(prev => [...prev, {
+          role: 'assistant',
+          content: `Login Puter gagal: ${errorMessage}`,
+          id: `assistant-auth-${Date.now()}-${prev.length}`,
+        }]);
+        setAsistenLoading(false);
+        return;
+      }
+      setAsistenLoading(false);
+    }
+
     setAsistenLoading(true);
     setJawabanAsisten('');
     setRiwayatAsisten(prev => [...prev, { role: 'user', content: pertanyaan, id: `user-${Date.now()}-${prev.length}` }]);
