@@ -180,6 +180,33 @@ const shouldRequireOnboarding = (snapshot = {}) => {
   return isEmptyOrganizationSnapshot(snapshot) && isDefaultSetupProfile(settings);
 };
 
+const formatAiInlineText = (text) => String(text || '')
+  .split(/(\*\*[^*]+\*\*|`[^`]+`)/g)
+  .filter(Boolean)
+  .map((part, index) => {
+    if (part.startsWith('**') && part.endsWith('**')) {
+      return <strong key={index}>{part.slice(2, -2)}</strong>;
+    }
+    if (part.startsWith('`') && part.endsWith('`')) {
+      return <code key={index}>{part.slice(1, -1)}</code>;
+    }
+    return <React.Fragment key={index}>{part}</React.Fragment>;
+  });
+
+const formatAiMessage = (content) => String(content || '')
+  .replace(/\r/g, '')
+  .split('\n')
+  .filter((line, index, lines) => line.trim() || (index > 0 && lines[index - 1].trim()))
+  .map((line, index) => {
+    const bullet = line.match(/^\s*(?:[-•*]|\d+[.)])\s+(.*)$/);
+    if (bullet) {
+      return <div className="ai-message-list-item" key={index}><span>•</span><div>{formatAiInlineText(bullet[1])}</div></div>;
+    }
+    return line.trim()
+      ? <p className="ai-message-paragraph" key={index}>{formatAiInlineText(line)}</p>
+      : <div className="ai-message-spacer" key={index} />;
+  });
+
 export function App() {
   const [activeTab, setActiveTab] = useState('pos');
   const [theme, setTheme] = useState(() => localStorage.getItem('selasar_theme') || 'light');
@@ -440,6 +467,14 @@ export function App() {
           white-space: pre-wrap;
           overflow-wrap: anywhere;
         }
+
+        .ai-message-bubble strong { color: inherit; font-weight: 800; }
+        .ai-message-bubble code { padding: 1px 4px; border-radius: 5px; background: rgba(255,255,255,.12); font: 700 .9em/1.3 ui-monospace, SFMono-Regular, Menlo, monospace; }
+        .ai-message-paragraph { margin: 0; }
+        .ai-message-paragraph + .ai-message-paragraph { margin-top: 7px; }
+        .ai-message-list-item { display: grid; grid-template-columns: 11px minmax(0, 1fr); gap: 4px; margin-top: 5px; }
+        .ai-message-list-item > span { color: var(--selasar-ai-accent); font-weight: 900; }
+        .ai-message-spacer { height: 5px; }
 
         .ai-message-bubble.user {
           background: var(--selasar-ai-accent);
@@ -2273,6 +2308,10 @@ ATURAN:
 - Jangan mengarang ID/data. Jika perlu ID, gunakan tool pencarian/data yang tersedia terlebih dahulu.
 - Untuk penghapusan atau void, hanya lakukan jika user memang meminta tindakan tersebut secara eksplisit.
 - Gunakan bahasa Indonesia yang natural, singkat, dan praktis.
+- FORMAT JAWABAN: jangan pernah menulis Markdown mentah seperti **, *, #, atau tabel. Gunakan kalimat pendek, lalu daftar dengan awalan "-" bila perlu. Beri judul pendek tanpa simbol bila jawaban memiliki beberapa bagian.
+- Jawaban operasional harus ringkas: langsung hasilnya, lalu tindakan paling penting. Untuk saran menaikkan omzet/operasional, beri 3-5 langkah konkret yang bisa dilakukan di kedai hari ini.
+- Jangan mengarang angka, stok, omzet, produk, atau status. Ambil data dengan tool terlebih dahulu; bila data tidak tersedia, katakan apa yang belum tersedia dan tawarkan langkah berikutnya.
+- Bedakan jelas antara aksi yang sudah berhasil dijalankan dan saran yang masih perlu persetujuan pengguna.
 `;
 
       const historyForModel = [...riwayatAsisten, { role: 'user', content: pertanyaan }]
@@ -2967,7 +3006,7 @@ ATURAN:
                       isUser ? 'user' : 'assistant'
                     }`}
                   >
-                    {message.content}
+                    {isUser ? message.content : formatAiMessage(message.content)}
                   </div>
                 </div>
               );
