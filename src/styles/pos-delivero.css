@@ -3447,8 +3447,8 @@ body.pos-delivero-active .loyalty-heading .pos-search-input input::placeholder {
 }
 
 /* Mobile checkout reliability: keep the cart sheet and its scrim in the same
-   viewport layer. This rule intentionally lives last because the POS has a
-   legacy mobile drawer in main.css as well as the Delivero theme rules. */
+   viewport layer. This rule intentionally lives last so it can override the
+   earlier Delivero theme rules when both apply. */
 @media (max-width:760px) {
   body.pos-delivero-active .mobile-selasar-brand {
     flex:0 0 120px !important;

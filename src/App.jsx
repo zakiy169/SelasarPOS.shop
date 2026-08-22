@@ -18,167 +18,20 @@ import { BluetoothModal } from './components/Settings/BluetoothModal';
 import { InstallAppButton } from './components/InstallAppButton';
 import { supabase } from './lib/supabase';
 import { getJakartaDateKey, getShiftCashSummary, shouldAutoCloseShift } from './utils/shift';
-
-// Font stack map applied as a CSS variable
-const FONT_STACKS = {
-  jakarta: "'Plus Jakarta Sans', system-ui, -apple-system, sans-serif",
-  system:  "-apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif",
-  inter:   "'Inter', system-ui, -apple-system, sans-serif",
-};
-
-const INVENTORY_UNIT_META = {
-  ml: { family: 'volume', factor: 1, defaultPackSize: 1000 },
-  liter: { family: 'volume', factor: 1000, defaultPackSize: 1 },
-  g: { family: 'weight', factor: 1, defaultPackSize: 1000 },
-  gr: { family: 'weight', factor: 1, defaultPackSize: 1000 },
-  kg: { family: 'weight', factor: 1000, defaultPackSize: 1 },
-  pcs: { family: 'count', factor: 1, defaultPackSize: 1 },
-  cup: { family: 'count', factor: 1, defaultPackSize: 1 },
-};
-
-const getInventoryUnitMeta = (unit) => INVENTORY_UNIT_META[String(unit || '').toLowerCase()] || INVENTORY_UNIT_META.ml;
-
-const getInventoryPackSize = (item = {}) => {
-  const explicit = Number(item?.packSize ?? item?.packageSize ?? item?.package_quantity);
-  if (Number.isFinite(explicit) && explicit > 0) return explicit;
-  return getInventoryUnitMeta(item?.unit || item?.satuan).defaultPackSize;
-};
-
-const convertInventoryQuantity = (value, fromUnit, toUnit) => {
-  const from = getInventoryUnitMeta(fromUnit);
-  const to = getInventoryUnitMeta(toUnit);
-  const amount = Number(value) || 0;
-  if (from.family !== to.family) return Number.NaN;
-  return (amount * from.factor) / to.factor;
-};
-
-const getThemeStorageKey = (organizationId) => (organizationId ? `selasar_theme_${organizationId}` : 'selasar_theme');
-const getWorkspaceStorageKey = (organizationId, key) => `selasar_org_${organizationId}_${key}`;
-const LEGACY_WORKSPACE_KEYS = [
-  'selasar_products',
-  'selasar_inventory',
-  'selasar_tables',
-  'selasar_members',
-  'selasar_transactions',
-  'selasar_expenses',
-  'selasar_inventory_history',
-  'selasar_addons',
-  'selasar_settings',
-  'selasar_shift',
-  'selasar_shift_history',
-];
-
-const DEFAULT_APP_SETTINGS = {
-  printerName: 'BlueTooth Printer 58mm',
-  printerWidth: '58mm',
-  qrisImage: null,
-  taxPercent: 11,
-  serviceChargePercent: 5,
-  font: 'jakarta',
-  promoSlides: [
-    { id: 'signature', tag: 'SIGNATURE', title: 'KOPI SELASAR', subtitle: 'Aren · Fresh Milk', description: 'Signature blend · racikan hari ini', image: '', badge: 'Rp 25K' },
-    { id: 'bundle', tag: 'PROMO HARI INI', title: 'CROFFLE + LATTE', subtitle: '−20% Bundling', description: 'Berlaku 07:00 – 15:00 setiap hari', image: '', badge: '−20%' },
-    { id: 'matcha', tag: 'BARU', title: 'MATCHA SELASAR', subtitle: 'Premium Ceremonial', description: 'Rasa umami · tanpa tambahan gula', image: '', badge: 'NEW' },
-  ],
-  onboardingCompleted: false,
-  operationalExpenses: [],
-  profile: {
-    businessName: '',
-    ownerName: '',
-    ownerPin: '',
-    cashierPin: '',
-  },
-  receipt: {
-    storeName: '',
-    address: '',
-    phone: '',
-    footer: 'Terima kasih atas kunjungan Anda',
-    social: '',
-    logoMode: 'selasar',
-    customLogo: null,
-    showCustomer: true,
-    showCashier: true,
-    showTable: true,
-    showTax: true,
-    showService: true,
-  },
-};
-
-const createEmptyOrganizationSnapshot = (organizationId) => ({
-  organization_id: organizationId,
-  products: [],
-  inventory: [],
-  restaurant_tables: [],
-  members: [],
-  transactions: [],
-  addons: [],
-  app_settings: { ...DEFAULT_APP_SETTINGS },
-  active_shift: null,
-  shift_history: [],
-  updated_at: new Date().toISOString(),
-});
-
-const normalizeAppSettings = (settings = {}) => ({
-  ...DEFAULT_APP_SETTINGS,
-  ...settings,
-  profile: {
-    ...DEFAULT_APP_SETTINGS.profile,
-    ...(settings.profile || {}),
-  },
-  receipt: {
-    ...DEFAULT_APP_SETTINGS.receipt,
-    ...(settings.receipt || {}),
-  },
-});
-
-const safeReadJson = (key, fallback) => {
-  try {
-    const saved = localStorage.getItem(key);
-    return saved ? JSON.parse(saved) : fallback;
-  } catch (error) {
-    console.warn(`Data lokal ${key} tidak valid, memakai data kosong.`, error);
-    return fallback;
-  }
-};
-
-const isUserEditingForm = () => {
-  if (typeof document === 'undefined') return false;
-  const activeElement = document.activeElement;
-  return Boolean(activeElement && ['INPUT', 'TEXTAREA', 'SELECT'].includes(activeElement.tagName));
-};
-
-const isEmptyOrganizationSnapshot = (snapshot = {}) => {
-  const lists = [
-    snapshot.products,
-    snapshot.inventory,
-    snapshot.restaurant_tables,
-    snapshot.members,
-    snapshot.transactions,
-    snapshot.addons,
-    snapshot.shift_history,
-  ];
-  const hasContent = lists.some(list => Array.isArray(list) && list.length > 0) || Boolean(snapshot.active_shift);
-  return !hasContent;
-};
-
-const isDefaultSetupProfile = (appSettings = {}) => {
-  const profile = appSettings.profile || {};
-
-
-  return (
-    (profile.businessName || 'Kedai Kopi Selasar') === 'Kedai Kopi Selasar' &&
-    (profile.ownerName || 'Owner') === 'Owner' &&
-    (profile.ownerPin || '8888') === '8888' &&
-    (profile.cashierPin || '1234') === '1234'
-  );
-};
-
-const shouldRequireOnboarding = (snapshot = {}) => {
-  const settings = snapshot.app_settings || {};
-  if (settings.onboardingCompleted === false) return true;
-  if ('onboardingCompleted' in settings) return false;
-  return isEmptyOrganizationSnapshot(snapshot) && isDefaultSetupProfile(settings);
-};
+import {
+  DEFAULT_APP_SETTINGS,
+  FONT_STACKS,
+  LEGACY_WORKSPACE_KEYS,
+  convertInventoryQuantity,
+  createEmptyOrganizationSnapshot,
+  getInventoryPackSize,
+  getThemeStorageKey,
+  getWorkspaceStorageKey,
+  isUserEditingForm,
+  normalizeAppSettings,
+  safeReadJson,
+  shouldRequireOnboarding,
+} from './utils/appState';
 
 const formatAiInlineText = (text) => String(text || '')
   .split(/(\*\*[^*]+\*\*|`[^`]+`)/g)
@@ -215,7 +68,6 @@ export function App() {
 
   // Asisten Kasir AI (Puter.js)
   const [pertanyaanAsisten, setPertanyaanAsisten] = useState('');
-  const [, setJawabanAsisten] = useState('');
   const [asistenLoading, setAsistenLoading] = useState(false);
   const [asistenMinimized, setAsistenMinimized] = useState(() => localStorage.getItem('selasar_ai_minimized') === 'true');
   const [riwayatAsisten, setRiwayatAsisten] = useState([]);
@@ -1256,14 +1108,7 @@ export function App() {
       suppressCloudWriteRef.current = false;
       return undefined;
     }
-      const timeout = setTimeout(() => {
-        console.log('CLOUD SAVE:', {
-          products: products.length,
-          transactions: transactions.length,
-          time: new Date().toISOString(),
-        });
-
-        
+    const timeout = setTimeout(() => {
       queueCloudSave({
         organization_id: activeOrganizationId,
         products,
@@ -1528,23 +1373,6 @@ export function App() {
     document.documentElement.style.setProperty('--font-main', fontStack);
     document.body.style.setProperty('font-family', fontStack, 'important');
   }, [appSettings.font]);
-
-  // Global numeric input UX: nilai awal 0 otomatis terseleksi saat fokus.
-  // Jadi ketik 1 langsung menjadi 1, bukan 01.
-  useEffect(() => {
-    const handleNumericInputFocus = (event) => {
-      const input = event.target;
-      if (!(input instanceof HTMLInputElement)) return;
-      if (input.type !== 'number' || input.disabled || input.readOnly) return;
-      const rawValue = String(input.value ?? '').trim();
-      if (!/^0+(?:\.0+)?$/.test(rawValue)) return;
-      requestAnimationFrame(() => {
-        try { input.select(); } catch {}
-      });
-    };
-    document.addEventListener('focusin', handleNumericInputFocus, true);
-    return () => document.removeEventListener('focusin', handleNumericInputFocus, true);
-  }, []);
 
   // ── Mobile UI safeguards ────────────────────────────────────────────────
   useEffect(() => {
@@ -2271,7 +2099,6 @@ export function App() {
         await puter.auth.signIn({ attempt_temp_user_creation: true });
       } catch (error) {
         const errorMessage = error?.message || error?.msg || 'Login Puter dibatalkan atau popup diblokir browser.';
-        setJawabanAsisten(`Login Puter gagal: ${errorMessage}`);
         setRiwayatAsisten(prev => [...prev, {
           role: 'assistant',
           content: `Login Puter gagal: ${errorMessage}`,
@@ -2284,7 +2111,6 @@ export function App() {
     }
 
     setAsistenLoading(true);
-    setJawabanAsisten('');
     setRiwayatAsisten(prev => [...prev, { role: 'user', content: pertanyaan, id: `user-${Date.now()}-${prev.length}` }]);
     setPertanyaanAsisten('');
 
@@ -2373,12 +2199,10 @@ ATURAN:
             : typeof response === 'string' ? response : '';
 
       const finalJawaban = jawaban || 'Perintah selesai dijalankan.';
-      setJawabanAsisten(finalJawaban);
       setRiwayatAsisten(prev => [...prev, { role: 'assistant', content: finalJawaban, id: `assistant-${Date.now()}-${prev.length}` }]);
     } catch (error) {
       console.error('Gagal menjalankan Asisten Kasir AI:', error);
       const errorText = `Asisten AI gagal menjalankan perintah: ${error?.message || 'Silakan coba lagi.'}`;
-      setJawabanAsisten(errorText);
       setRiwayatAsisten(prev => [...prev, { role: 'assistant', content: errorText, id: `assistant-error-${Date.now()}-${prev.length}` }]);
     } finally {
       setAsistenLoading(false);
