@@ -197,7 +197,17 @@ class BluetoothPrinterManager {
     const is80mm = appSettings.printerWidth === '80mm';
     const width = is80mm ? 48 : 32; // Line width in chars
     const divider = '-'.repeat(width) + '\n';
-    const normalizeText = (text) => String(text || '').replace(/\u00a0/g, ' ').replace(/[\t ]+/g, ' ').trim();
+    // Most 58/80mm Bluetooth printers use a legacy single-byte code page.
+    // Keep the text receipt ASCII so a printer never renders UTF-8 bytes as
+    // random glyphs.
+    const normalizeText = (text) => String(text || '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/\u00a0/g, ' ')
+      .replace(/[•·–—]/g, '-')
+      .replace(/[^\x20-\x7E]/g, '')
+      .replace(/[\t ]+/g, ' ')
+      .trim();
     const wrapToLines = (text, maxLength) => {
       const paragraphs = String(text || '').split(/\r?\n/);
       const lines = [];
@@ -277,7 +287,8 @@ class BluetoothPrinterManager {
     await this.sendRawData(escData);
   }
 
-  // Kept as a compatibility fallback for callers outside the receipt modal.
+  // Text ESC/POS is the safe default for portable Bluetooth thermal printers.
+  // Raster output remains available for printers explicitly known to support it.
   async printTransaction(transaction, appSettings = {}) {
     if (!this.isConnected) throw new Error('Printer Bluetooth belum terhubung.');
     await this.sendRawData(this.formatESCPOSTransaction(transaction, appSettings));

@@ -16,9 +16,11 @@ export const ReceiptModal = ({ transaction, appSettings = {}, onClose }) => {
     sounds.playBeep();
     if (!bluetoothPrinter.isConnected) return setShowBtModal(true);
     try {
-      setPrintingStatus('Mencetak ke printer Bluetooth...');
-      const receiptElement = document.getElementById('printable-receipt');
-      await bluetoothPrinter.printReceiptPreview(receiptElement, appSettings);
+      setPrintingStatus('Mencetak struk...');
+      // Jangan kirim raster preview sebagai default: banyak printer Bluetooth
+      // portable mencetak data raster sebagai karakter acak. Jalur text ESC/POS
+      // kompatibel untuk printer 58/80mm umum.
+      await bluetoothPrinter.printTransaction(transaction, appSettings);
       sounds.playSuccessChime();
       setPrintingStatus('');
     } catch (error) {
