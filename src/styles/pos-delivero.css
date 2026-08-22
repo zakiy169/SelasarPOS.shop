@@ -340,6 +340,53 @@ body.pos-delivero-active .pos-workspace-hero aside span {
   font-size: 11px !important;
 }
 
+/* Reuse the login courier in the otherwise empty cashier welcome area. */
+body.pos-delivero-active .pos-workspace-hero {
+  position:relative;
+}
+
+body.pos-delivero-active .pos-hero-skater {
+  width:126px;
+  height:auto;
+  position:absolute;
+  left:-144px;
+  top:-8px;
+  pointer-events:none;
+  filter:drop-shadow(0 13px 16px rgba(6,68,130,.18));
+  transform:rotate(-4deg);
+}
+
+/* Operational pages share a calm blue workspace rather than bare white
+   surfaces. Tables remain high-contrast for day-to-day cashier work. */
+body.pos-delivero-active :is(.loyalty-page,.inventory-page,.table-management-page,.menu-manager-page,.reports-page,.settings-page,.shift-page,.kds-page) {
+  background:
+    radial-gradient(circle at 92% 4%,rgba(76,127,255,.14),transparent 28%),
+    linear-gradient(135deg,#f5f8ff 0%,#edf3ff 58%,#f7f8ff 100%) !important;
+}
+
+body.pos-delivero-active :is(.member-table-panel,.apple-table-container,.report-panel,.report-card,.report-metric,.settings-surface,.settings-account-card,.settings-subsection,.app-info-card,.shift-card,.table-card,.kds-card,.report-kpi-card,.member-mobile-card) {
+  border-color:#dbe5fb !important;
+  background:linear-gradient(145deg,#fafdff 0%,#eff5ff 100%) !important;
+  box-shadow:0 14px 32px rgba(31,62,199,.09) !important;
+}
+
+body.pos-delivero-active .member-table th,
+body.pos-delivero-active .apple-table th {
+  color:#3b5b9f !important;
+  background:#e2ebff !important;
+  border-bottom-color:#d4e0fb !important;
+}
+
+body.pos-delivero-active .member-table td,
+body.pos-delivero-active .apple-table td {
+  border-top-color:#dde7fa !important;
+  background:rgba(255,255,255,.48);
+}
+
+@media (max-width:1080px) {
+  body.pos-delivero-active .pos-hero-skater { display:none; }
+}
+
 /* Promo Banner */
 body.pos-delivero-active .pos-delv-banner {
   position: relative;

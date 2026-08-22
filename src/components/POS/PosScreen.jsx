@@ -315,6 +315,7 @@ export const PosScreen = ({
             <h2 className="pos-greeting-title">Hai {greetingName}, siap layani pelanggan.</h2>
             <p>Katalog, ketersediaan produk, pelanggan, dan pembayaran dalam satu alur cepat.</p>
           </div>
+          <img className="pos-hero-skater" src="/selasar-skateboard-courier.png" alt="Kurir Selasar naik skateboard membawa kopi" />
           <aside><small>Shift aktif</small><strong>{activeShift?.shiftType || activeShift?.name || 'Belum dibuka'}</strong><span>{activeShift?.baristaName || activeShift?.name || 'Buka shift untuk mulai'}</span></aside>
         </header>
 
